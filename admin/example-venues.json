@@ -1,0 +1,62 @@
+[
+  {
+    "venueName": "Gunners Barracks",
+    "location": "Mosman, Sydney",
+    "city": "Sydney",
+    "state": "NSW"
+  },
+  {
+    "venueName": "Taronga Zoo",
+    "location": "Mosman, Sydney",
+    "city": "Sydney",
+    "state": "NSW"
+  },
+  {
+    "venueName": "Boomerang Farm",
+    "location": "Mudgee",
+    "city": "Mudgee",
+    "state": "NSW"
+  },
+  {
+    "venueName": "Stones of the Yarra Valley",
+    "location": "Yarra Valley",
+    "city": "Melbourne",
+    "state": "VIC"
+  },
+  {
+    "venueName": "Summergrove Estate",
+    "location": "Gold Coast Hinterland",
+    "city": "Brisbane",
+    "state": "QLD"
+  },
+  {
+    "venueName": "Quat Quatta",
+    "location": "Ripponlea, Melbourne",
+    "city": "Melbourne",
+    "state": "VIC"
+  },
+  {
+    "venueName": "Fig Tree Restaurant",
+    "location": "Byron Bay",
+    "city": "Byron Bay",
+    "state": "NSW"
+  },
+  {
+    "venueName": "Riverstone Estate",
+    "location": "Yarra Valley",
+    "city": "Melbourne",
+    "state": "VIC"
+  },
+  {
+    "venueName": "The Island Gold Coast",
+    "location": "Surfers Paradise",
+    "city": "Gold Coast",
+    "state": "QLD"
+  },
+  {
+    "venueName": "Frasers Restaurant",
+    "location": "Kings Park, Perth",
+    "city": "Perth",
+    "state": "WA"
+  }
+]
