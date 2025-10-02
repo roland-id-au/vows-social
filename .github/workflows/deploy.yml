@@ -1,0 +1,60 @@
+name: Deploy to Supabase
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase Project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: |
+          supabase link --project-ref $PROJECT_ID
+
+      - name: Deploy Database Migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase db push
+
+      - name: Deploy Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
+        run: |
+          # Set secrets for Edge Functions
+          supabase secrets set PERPLEXITY_API_KEY="$PERPLEXITY_API_KEY" --env-file <(echo "")
+
+          # Deploy all Edge Functions
+          supabase functions deploy deep-research-venue
+          supabase functions deploy batch-research-venues
+          supabase functions deploy discover-trending-venues
+          supabase functions deploy morning-discovery-pipeline
+          supabase functions deploy scheduled-venue-refresh
+
+      - name: Deployment Summary
+        run: |
+          echo "✅ Database migrations deployed"
+          echo "✅ Edge Functions deployed"
+          echo "🚀 Deployment complete to vows.social Supabase project"
