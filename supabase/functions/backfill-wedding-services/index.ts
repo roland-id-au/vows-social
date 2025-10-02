@@ -41,7 +41,7 @@ serve(async (req) => {
     console.log('🔍 STEP 2: Fetching all pending service discoveries...\n')
 
     const { data: allPendingServices } = await supabase
-      .from('discovered_venues')
+      .from('discovered_listings')
       .select('*')
       .eq('status', 'pending_research')
       .neq('type', 'venue') // Only services, not venues
@@ -109,7 +109,7 @@ serve(async (req) => {
           })
 
           await supabase
-            .from('discovered_venues')
+            .from('discovered_listings')
             .update({
               status: 'researched',
               listing_id: researchResult.listing.id,
@@ -123,7 +123,7 @@ serve(async (req) => {
           console.log(`  ✗ Failed`)
 
           await supabase
-            .from('discovered_venues')
+            .from('discovered_listings')
             .update({ status: 'research_failed' })
             .eq('id', service.id)
         }

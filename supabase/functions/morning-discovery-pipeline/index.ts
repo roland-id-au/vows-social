@@ -14,10 +14,10 @@ serve(async (req) => {
 
     console.log('🌅 Starting morning discovery pipeline...')
 
-    // STEP 1: Discover trending venues from Instagram
-    console.log('\n📸 Step 1: Discovering trending venues...')
+    // STEP 1A: Discover trending venues from Instagram
+    console.log('\n📸 Step 1A: Discovering trending venues...')
 
-    const discoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discover-trending-venues`, {
+    const venueDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discover-trending-venues`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -25,19 +25,39 @@ serve(async (req) => {
       }
     })
 
-    const discoveryResult = await discoveryResponse.json()
+    const venueDiscoveryResult = await venueDiscoveryResponse.json()
 
-    if (!discoveryResult.success) {
-      throw new Error(`Discovery failed: ${discoveryResult.error}`)
+    if (!venueDiscoveryResult.success) {
+      throw new Error(`Venue discovery failed: ${venueDiscoveryResult.error}`)
     }
 
-    console.log(`Found ${discoveryResult.new_discoveries} new trending venues`)
+    console.log(`Found ${venueDiscoveryResult.new_discoveries} new trending venues`)
+
+    // STEP 1B: Discover trending wedding services from Instagram
+    console.log('\n💐 Step 1B: Discovering trending wedding services...')
+
+    const serviceDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discover-wedding-services`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      }
+    })
+
+    const serviceDiscoveryResult = await serviceDiscoveryResponse.json()
+
+    if (!serviceDiscoveryResult.success) {
+      console.warn(`Service discovery failed: ${serviceDiscoveryResult.error}`)
+    }
+
+    const totalNewDiscoveries = venueDiscoveryResult.new_discoveries + (serviceDiscoveryResult.new_discoveries || 0)
+    console.log(`Total new discoveries: ${totalNewDiscoveries} (${venueDiscoveryResult.new_discoveries} venues + ${serviceDiscoveryResult.new_discoveries || 0} services)`)
 
     // STEP 2: Research top 5 discovered venues (increased from 3 for faster growth)
     console.log('\n🔍 Step 2: Researching discovered venues...')
 
     const { data: pendingDiscoveries } = await supabase
-      .from('discovered_venues')
+      .from('discovered_listings')
       .select('*')
       .eq('status', 'pending_research')
       .order('engagement_score', { ascending: false })
@@ -78,7 +98,7 @@ serve(async (req) => {
 
             // Update discovery status
             await supabase
-              .from('discovered_venues')
+              .from('discovered_listings')
               .update({
                 status: 'researched',
                 listing_id: researchResult.listing.id,
@@ -91,7 +111,7 @@ serve(async (req) => {
             console.log(`✗ Failed to research: ${discovery.name}`)
 
             await supabase
-              .from('discovered_venues')
+              .from('discovered_listings')
               .update({ status: 'research_failed' })
               .eq('id', discovery.id)
           }
@@ -105,64 +125,82 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Researched ${researchedVenues.length} new venues`)
+    console.log(`Researched ${researchedVenues.length} new listings`)
 
-    // STEP 3: Send push notifications if we have new venues
+    // STEP 3: Verify enrichment and send push notifications
     if (researchedVenues.length > 0) {
-      console.log('\n📱 Step 3: Sending push notifications...')
+      console.log('\n✅ Step 3: Verifying enrichment quality...')
 
-      // Get users who have notifications enabled
-      const { data: users } = await supabase
-        .from('users')
-        .select('id, push_token, wedding_date, location_data')
-        .not('push_token', 'is', null)
-        .eq('notifications_enabled', true)
+      // Only notify about fully enriched listings (with photos and packages)
+      const fullyEnriched = researchedVenues.filter(v =>
+        v.images_count > 0 && v.packages_count > 0
+      )
 
-      if (users && users.length > 0) {
-        // Prepare notification payload
-        const topVenue = researchedVenues[0]
-        const notificationTitle = '✨ New Trending Venues Discovered!'
-        const notificationBody = researchedVenues.length === 1
-          ? `${topVenue.title} is trending! ${topVenue.why_trending}`
-          : `${researchedVenues.length} hot new venues just added, including ${topVenue.title}`
+      console.log(`Fully enriched listings: ${fullyEnriched.length}/${researchedVenues.length}`)
 
-        // Send notifications (using FCM or similar)
-        const notificationPromises = users.map(async (user) => {
-          try {
-            // Send via Firebase Cloud Messaging or similar service
-            await sendPushNotification({
-              token: user.push_token,
-              title: notificationTitle,
-              body: notificationBody,
-              data: {
-                type: 'new_venues',
-                venue_ids: researchedVenues.map(v => v.id),
-                action: 'open_trending'
-              }
-            })
+      if (fullyEnriched.length === 0) {
+        console.log('No fully enriched listings to notify about')
+      } else {
+        console.log('\n📱 Step 4: Sending push notifications...')
 
-            // Log notification
-            await supabase.from('notifications').insert({
-              user_id: user.id,
-              title: notificationTitle,
-              body: notificationBody,
-              type: 'new_venues',
-              data: {
-                venue_ids: researchedVenues.map(v => v.id)
-              },
-              sent_at: new Date().toISOString()
-            })
+        // Get users who have notifications enabled
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, push_token, wedding_date, location_data')
+          .not('push_token', 'is', null)
+          .eq('notifications_enabled', true)
 
-          } catch (error) {
-            console.error(`Failed to send notification to user ${user.id}:`, error)
-          }
-        })
+        if (users && users.length > 0) {
+          // Prepare notification payload
+          const topListing = fullyEnriched[0]
+          const notificationTitle = '✨ New Trending Listings Discovered!'
+          const notificationBody = fullyEnriched.length === 1
+            ? `${topListing.title} is trending! ${topListing.why_trending}`
+            : `${fullyEnriched.length} hot new listings just added, including ${topListing.title}`
 
-        await Promise.allSettled(notificationPromises)
+          // Send notifications (using FCM or similar)
+          const notificationPromises = users.map(async (user) => {
+            try {
+              // Send via Firebase Cloud Messaging or similar service
+              await sendPushNotification({
+                token: user.push_token,
+                title: notificationTitle,
+                body: notificationBody,
+                data: {
+                  type: 'new_listings',
+                  listing_ids: fullyEnriched.map(v => v.id),
+                  action: 'open_trending'
+                }
+              })
 
-        console.log(`Sent notifications to ${users.length} users`)
+              // Log notification
+              await supabase.from('notifications').insert({
+                user_id: user.id,
+                title: notificationTitle,
+                body: notificationBody,
+                type: 'new_listings',
+                data: {
+                  listing_ids: fullyEnriched.map(v => v.id)
+                },
+                sent_at: new Date().toISOString()
+              })
+
+            } catch (error) {
+              console.error(`Failed to send notification to user ${user.id}:`, error)
+            }
+          })
+
+          await Promise.allSettled(notificationPromises)
+
+          console.log(`Sent notifications to ${users.length} users`)
+        }
       }
     }
+
+    // Calculate fully enriched count
+    const fullyEnrichedCount = researchedVenues.filter(v =>
+      v.images_count > 0 && v.packages_count > 0
+    ).length
 
     // Log pipeline completion
     await supabase.from('sync_logs').insert({
@@ -170,9 +208,12 @@ serve(async (req) => {
       status: 'success',
       records_processed: researchedVenues.length,
       metadata: {
-        discoveries: discoveryResult.new_discoveries,
+        total_discoveries: totalNewDiscoveries,
+        venue_discoveries: venueDiscoveryResult.new_discoveries,
+        service_discoveries: serviceDiscoveryResult.new_discoveries || 0,
         researched: researchedVenues.length,
-        notifications_sent: researchedVenues.length > 0
+        fully_enriched: fullyEnrichedCount,
+        notifications_sent: fullyEnrichedCount > 0
       },
       timestamp: new Date().toISOString()
     })
@@ -182,10 +223,13 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        discoveries: discoveryResult.new_discoveries,
+        total_discoveries: totalNewDiscoveries,
+        venue_discoveries: venueDiscoveryResult.new_discoveries,
+        service_discoveries: serviceDiscoveryResult.new_discoveries || 0,
         researched: researchedVenues.length,
-        venues: researchedVenues,
-        message: `Pipeline complete: ${researchedVenues.length} new venues added`
+        fully_enriched: fullyEnrichedCount,
+        listings: researchedVenues,
+        message: `Pipeline complete: ${researchedVenues.length} listings researched, ${fullyEnrichedCount} fully enriched`
       }),
       {
         headers: { 'Content-Type': 'application/json' },

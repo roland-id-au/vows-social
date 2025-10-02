@@ -42,7 +42,7 @@ serve(async (req) => {
     console.log('🔍 STEP 2: Fetching all pending discoveries...\n')
 
     const { data: allPendingDiscoveries, error: queryError } = await supabase
-      .from('discovered_venues')
+      .from('discovered_listings')
       .select('*')
       .eq('status', 'pending_research')
       .order('engagement_score', { ascending: false })
@@ -114,7 +114,7 @@ serve(async (req) => {
 
           // Update discovery status
           await supabase
-            .from('discovered_venues')
+            .from('discovered_listings')
             .update({
               status: 'researched',
               listing_id: researchResult.listing.id,
@@ -128,7 +128,7 @@ serve(async (req) => {
           console.log(`  ✗ Failed: ${researchResult.error || 'Unknown error'}`)
 
           await supabase
-            .from('discovered_venues')
+            .from('discovered_listings')
             .update({ status: 'research_failed' })
             .eq('id', discovery.id)
         }

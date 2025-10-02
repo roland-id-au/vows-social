@@ -209,7 +209,7 @@ Return vendors with RECENT wedding posts (last 7-30 days preferred).`
         discovered_at: new Date().toISOString()
       }))
 
-      await supabase.from('discovered_venues').insert(records)
+      await supabase.from('discovered_listings').insert(records)
     }
 
     // Log discovery

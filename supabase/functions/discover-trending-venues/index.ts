@@ -267,7 +267,7 @@ Return ONLY venues/caterers that:
       }))
 
       const { error } = await supabase
-        .from('discovered_venues')
+        .from('discovered_listings')
         .insert(discoveryRecords)
 
       if (error) {

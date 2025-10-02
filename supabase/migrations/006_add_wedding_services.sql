@@ -1,25 +1,8 @@
 -- Expand database to support all wedding services (caterers, florists, photographers, etc.)
 -- Not just venues, but complete wedding marketplace
 
--- Update category enum to include all wedding service types
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'caterer';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'florist';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'photographer';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'videographer';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'musician';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'stylist';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'planner';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'decorator';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'transport';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'celebrant';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'cake';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'makeup';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'hair';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'entertainment';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'rentals';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'stationery';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'favors';
-ALTER TYPE listing_category ADD VALUE IF NOT EXISTS 'other_service';
+-- Note: category column is TEXT, not an enum, so no need to alter type
+-- This migration adds service-specific columns and views
 
 -- Create service_type column for better categorization
 ALTER TABLE listings
