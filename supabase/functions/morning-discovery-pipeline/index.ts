@@ -33,7 +33,7 @@ serve(async (req) => {
 
     console.log(`Found ${discoveryResult.new_discoveries} new trending venues`)
 
-    // STEP 2: Research top 3 discovered venues
+    // STEP 2: Research top 5 discovered venues (increased from 3 for faster growth)
     console.log('\n🔍 Step 2: Researching discovered venues...')
 
     const { data: pendingDiscoveries } = await supabase
@@ -41,7 +41,7 @@ serve(async (req) => {
       .select('*')
       .eq('status', 'pending_research')
       .order('engagement_score', { ascending: false })
-      .limit(3) // Research top 3 by engagement
+      .limit(5) // Research top 5 by engagement for continuous database growth
 
     const researchedVenues = []
 

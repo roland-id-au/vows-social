@@ -26,13 +26,53 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY')!
 
-    console.log('Starting Instagram discovery...')
+    // Parse request body for options
+    const body = req.method === 'POST' ? await req.json() : {}
+    const expandedSearch = body.expandedSearch || false
+    const citiesToSearch = body.cities || null
 
-    // Define cities to search
-    const cities = ['Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide']
+    console.log('Starting Instagram discovery...')
+    console.log(`Expanded search: ${expandedSearch}`)
+
+    // Comprehensive city list for Australia + international expansion
+    const allAustralianCities = [
+      'Sydney', 'Melbourne', 'Brisbane', 'Perth', 'Adelaide',
+      'Gold Coast', 'Canberra', 'Newcastle', 'Wollongong', 'Byron Bay',
+      'Hobart', 'Cairns', 'Noosa', 'Margaret River', 'Hunter Valley'
+    ]
+
+    const internationalCities = [
+      { city: 'Bali', country: 'Indonesia' },
+      { city: 'Queenstown', country: 'New Zealand' },
+      { city: 'Fiji', country: 'Fiji' },
+      { city: 'Phuket', country: 'Thailand' }
+    ]
+
+    // Determine which cities to search
+    let citiesToQuery: string[]
+
+    if (citiesToSearch) {
+      // Use provided cities
+      citiesToQuery = citiesToSearch
+    } else if (expandedSearch) {
+      // Full discovery across all Australian cities
+      citiesToQuery = allAustralianCities
+    } else {
+      // Daily rotation through 3 cities (changes based on day of week)
+      const dayOfWeek = new Date().getDay()
+      const startIndex = (dayOfWeek * 3) % allAustralianCities.length
+      citiesToQuery = [
+        allAustralianCities[startIndex],
+        allAustralianCities[(startIndex + 1) % allAustralianCities.length],
+        allAustralianCities[(startIndex + 2) % allAustralianCities.length]
+      ]
+    }
+
+    console.log(`Searching cities: ${citiesToQuery.join(', ')}`)
+
     const allDiscoveries: DiscoveredVenue[] = []
 
-    for (const city of cities) {
+    for (const city of citiesToQuery) {
       console.log(`Discovering trending venues in ${city}...`)
 
       const structuredSchema = {
@@ -245,7 +285,8 @@ Return ONLY venues/caterers that:
       metadata: {
         total_found: allDiscoveries.length,
         new_discoveries: newDiscoveries.length,
-        cities_searched: cities
+        cities_searched: citiesToQuery,
+        expanded_search: expandedSearch
       },
       timestamp: new Date().toISOString()
     })

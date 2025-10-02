@@ -14,6 +14,7 @@ interface VenueResearchRequest {
   location: string
   city: string
   state: string
+  serviceType?: string // 'venue', 'caterer', 'florist', 'photographer', etc.
   forceRefresh?: boolean
 }
 
@@ -64,7 +65,7 @@ serve(async (req) => {
   }
 
   try {
-    const { venueName, location, city, state, forceRefresh = false } =
+    const { venueName, location, city, state, serviceType = 'venue', forceRefresh = false } =
       await req.json() as VenueResearchRequest
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!

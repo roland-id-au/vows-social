@@ -62,7 +62,7 @@ class SupabaseService {
 
       if (filters.styles.isNotEmpty) {
         final styles = filters.styles.map((s) => s.name).toList();
-        query = query.in('style', styles);
+        query = query.inFilter('style', styles);
       }
 
       final response = await query;
