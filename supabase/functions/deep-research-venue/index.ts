@@ -242,7 +242,32 @@ serve(async (req) => {
       ]
     }
 
-    console.log(`Starting deep research for: ${venueName} in ${location}`)
+    console.log(`Starting deep research for: ${venueName} (${serviceType}) in ${location}`)
+
+    // Service-specific prompts
+    const serviceTypeLabels: Record<string, string> = {
+      venue: 'wedding venue',
+      caterer: 'wedding caterer',
+      florist: 'wedding florist',
+      photographer: 'wedding photographer',
+      videographer: 'wedding videographer',
+      musician: 'wedding musician/band/DJ',
+      stylist: 'wedding stylist/event designer',
+      planner: 'wedding planner/coordinator',
+      decorator: 'wedding decorator',
+      transport: 'wedding transport service',
+      celebrant: 'wedding celebrant/officiant',
+      cake: 'wedding cake designer',
+      makeup: 'bridal makeup artist',
+      hair: 'bridal hair stylist',
+      entertainment: 'wedding entertainment',
+      rentals: 'wedding rentals/equipment',
+      stationery: 'wedding stationery designer',
+      favors: 'wedding favors supplier',
+      other_service: 'wedding service provider'
+    }
+
+    const serviceLabel = serviceTypeLabels[serviceType] || 'wedding service provider'
 
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -255,47 +280,47 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are an expert wedding venue researcher for Australia. Conduct DEEP, COMPREHENSIVE research on the given venue.
+            content: `You are an expert wedding service researcher for Australia. Conduct DEEP, COMPREHENSIVE research on the given ${serviceLabel}.
 
 YOUR TASK:
-1. Find the venue's official website, social media, and contact details
-2. Research current pricing, packages, and capacity from their latest information
+1. Find the business's official website, social media, and contact details
+2. Research current pricing, packages, and service options from their latest information
 3. Collect 8-12 HIGH-QUALITY, RECENT images from:
-   - Venue's official website gallery (use direct image URLs)
-   - Venue's Instagram account (@handle if available)
+   - Official website gallery (use direct image URLs)
+   - Instagram account (@handle if available)
    - Google Business Profile photos
-   - Wedding blogs featuring this venue
+   - Wedding blogs/features showcasing their work
    **IMPORTANT:** Provide direct image URLs (.jpg, .png, .webp) or Instagram CDN URLs
-4. Find and include 3-5 recent Instagram posts featuring real weddings at this venue
+4. Find and include 3-5 recent Instagram posts featuring real weddings using this service
 5. Identify exact location coordinates (city, state, country)
-6. List all amenities, features, and unique selling points
+6. List all services offered, specialties, and unique selling points
 7. Find reviews and ratings from Google, Facebook, WeddingWire, EasyWeddings
-8. Note any restrictions, policies, or important details couples should know
+8. Note any policies, requirements, or important details couples should know
 
 CRITICAL REQUIREMENTS FOR IMAGES:
 - Minimum 8 images, preferably 10-12
-- Use direct URLs from venue websites, Instagram CDN, or image hosts
-- Images should show: exterior, interior, ceremony setups, reception areas, gardens/outdoor spaces, sunset/golden hour shots
+- Use direct URLs from websites, Instagram CDN, or image hosts
+- Images should showcase their best wedding work
 - Verify all contact information is current
 - Pricing must be in AUD and current (2024/2025 rates)
-- Include recent Instagram posts with wedding content
+- Include recent Instagram posts with real wedding content
 
 Be thorough, accurate, and up-to-date. This data will be used in a production app.`
           },
           {
             role: 'user',
-            content: `Deep research "${venueName}" wedding venue located in ${city}, ${state}, Australia.
+            content: `Deep research "${venueName}" - a ${serviceLabel} located in ${city}, ${state}, Australia.
 
 Find comprehensive details including:
 - Exact address and GPS coordinates
 - Current 2024/2025 pricing and packages
-- Full capacity range
-- Complete amenities list
-- 8-12 high-quality venue photos (direct image URLs)
+${serviceType === 'venue' ? '- Full capacity range' : '- Service offerings and options'}
+- Complete services/features list
+- 8-12 high-quality photos of their work (direct image URLs)
 - Contact details (website, phone, email, Instagram)
 - Recent ratings and reviews
-- What makes this venue unique for weddings
-- Any restrictions or policies
+- What makes this business unique for weddings
+- Any requirements, policies, or important details
 
 Location hint: ${location}`
           }
@@ -335,12 +360,13 @@ Location hint: ${location}`
       console.warn(`Warning: Only ${validatedImages.length} valid images found`)
     }
 
-    // Save venue to database
+    // Save listing to database
     const listingData = {
       source_type: 'perplexity_deep_research',
       title: venueData.title,
       description: venueData.detailed_description || venueData.description,
-      category: 'venue',
+      category: serviceType,
+      service_type: serviceLabel,
       style: venueData.style,
       country: venueData.country || 'Australia',
       location_data: {
