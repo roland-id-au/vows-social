@@ -31,9 +31,9 @@ class SupabaseService {
 
       // Apply filters
       if (filters.locality != null) {
-        query = query.eq('locality', filters.locality);
+        query = query.eq('locality', filters.locality!);
       } else if (filters.region != null) {
-        query = query.eq('region', filters.region);
+        query = query.eq('region', filters.region!);
       } else if (filters.location != null) {
         // Use PostGIS for location-based search
         // This is a simplified version - actual implementation would use ST_Distance
@@ -41,7 +41,7 @@ class SupabaseService {
       }
 
       if (filters.country != null) {
-        query = query.eq('country', filters.country);
+        query = query.eq('country', filters.country!);
       }
 
       if (filters.minPrice != null) {
@@ -62,7 +62,7 @@ class SupabaseService {
 
       if (filters.styles.isNotEmpty) {
         final styles = filters.styles.map((s) => s.name).toList();
-        query = query.in_('style', styles);
+        query = query.in('style', styles);
       }
 
       final response = await query;
