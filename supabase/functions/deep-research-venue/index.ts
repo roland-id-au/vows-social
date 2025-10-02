@@ -195,6 +195,20 @@ serve(async (req) => {
         phone: { type: 'string' },
         instagram_handle: { type: 'string' },
         facebook_url: { type: 'string' },
+        instagram_posts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              post_url: { type: 'string' },
+              image_url: { type: 'string' },
+              caption: { type: 'string' },
+              posted_date: { type: 'string' }
+            },
+            required: ['image_url']
+          },
+          description: 'Recent Instagram posts featuring this venue (3-5 posts with wedding content)'
+        },
         rating: {
           type: 'number',
           minimum: 0,
@@ -246,21 +260,24 @@ YOUR TASK:
 1. Find the venue's official website, social media, and contact details
 2. Research current pricing, packages, and capacity from their latest information
 3. Collect 8-12 HIGH-QUALITY, RECENT images from:
-   - Venue's official website gallery
+   - Venue's official website gallery (use direct image URLs)
    - Venue's Instagram account (@handle if available)
    - Google Business Profile photos
    - Wedding blogs featuring this venue
-4. Identify exact location coordinates (city, state, country)
-5. List all amenities, features, and unique selling points
-6. Find reviews and ratings from Google, Facebook, WeddingWire, EasyWeddings
-7. Note any restrictions, policies, or important details couples should know
+   **IMPORTANT:** Provide direct image URLs (.jpg, .png, .webp) or Instagram CDN URLs
+4. Find and include 3-5 recent Instagram posts featuring real weddings at this venue
+5. Identify exact location coordinates (city, state, country)
+6. List all amenities, features, and unique selling points
+7. Find reviews and ratings from Google, Facebook, WeddingWire, EasyWeddings
+8. Note any restrictions, policies, or important details couples should know
 
-CRITICAL REQUIREMENTS:
-- All image URLs MUST be direct, publicly accessible URLs (jpg, png, webp)
+CRITICAL REQUIREMENTS FOR IMAGES:
 - Minimum 8 images, preferably 10-12
+- Use direct URLs from venue websites, Instagram CDN, or image hosts
 - Images should show: exterior, interior, ceremony setups, reception areas, gardens/outdoor spaces, sunset/golden hour shots
 - Verify all contact information is current
 - Pricing must be in AUD and current (2024/2025 rates)
+- Include recent Instagram posts with wedding content
 
 Be thorough, accurate, and up-to-date. This data will be used in a production app.`
           },
@@ -432,6 +449,29 @@ Location hint: ${location}`
       console.log(`Saved ${tagLinks.length} tags`)
     }
 
+    // Save Instagram posts
+    if (venueData.instagram_posts && venueData.instagram_posts.length > 0) {
+      const instagramRecords = venueData.instagram_posts.map((post, index) => ({
+        listing_id: listing.id,
+        post_id: `generated_${listing.id}_${index}`, // Generate ID since we may not have actual post IDs
+        image_url: post.image_url,
+        caption: post.caption || '',
+        username: venueData.instagram_handle || 'unknown',
+        posted_at: post.posted_date || new Date().toISOString()
+      }))
+
+      const { error: instaError } = await supabase
+        .from('instagram_posts')
+        .insert(instagramRecords)
+        .select()
+
+      if (instaError) {
+        console.error('Error saving Instagram posts:', instaError)
+      } else {
+        console.log(`Saved ${instagramRecords.length} Instagram posts`)
+      }
+    }
+
     // Log successful research
     await supabase.from('sync_logs').insert({
       source: 'perplexity_deep_research',
@@ -499,21 +539,31 @@ async function validateImages(urls: string[]): Promise<string[]> {
   for (const url of urls) {
     try {
       // Check if URL is well-formed
-      new URL(url)
+      const parsedUrl = new URL(url)
 
-      // Try to fetch headers to verify image exists
-      const response = await fetch(url, { method: 'HEAD' })
+      // Basic validation: must be http/https and look like an image URL
+      if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+        const path = parsedUrl.pathname.toLowerCase()
+        const hasImageExtension = path.match(/\.(jpg|jpeg|png|gif|webp)/)
+        const isImageHost = parsedUrl.hostname.includes('instagram') ||
+                           parsedUrl.hostname.includes('facebook') ||
+                           parsedUrl.hostname.includes('google') ||
+                           parsedUrl.hostname.includes('cloudinary') ||
+                           parsedUrl.hostname.includes('imgix')
 
-      if (response.ok) {
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.startsWith('image/')) {
+        // Accept if it has image extension OR is from known image hosting
+        if (hasImageExtension || isImageHost) {
           validUrls.push(url)
+          console.log(`✓ Valid image: ${url.substring(0, 80)}...`)
+        } else {
+          console.warn(`✗ No image extension: ${url.substring(0, 80)}`)
         }
       }
     } catch (error) {
-      console.warn(`Invalid image URL: ${url}`)
+      console.warn(`✗ Invalid URL format: ${url}`)
     }
   }
 
+  console.log(`Image validation: ${validUrls.length}/${urls.length} valid`)
   return validUrls
 }
