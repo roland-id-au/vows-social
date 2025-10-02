@@ -8,10 +8,8 @@ interface DiscoveredVenue {
   name: string
   type: 'venue' | 'caterer'
   location: string
-  locality?: string
   city: string
   state: string
-  region?: string
   country: string
   instagram_handle?: string
   instagram_posts_count: number
@@ -57,19 +55,11 @@ serve(async (req) => {
                   type: 'string',
                   description: 'Specific suburb or area'
                 },
-                locality: {
-                  type: 'string',
-                  description: 'Suburb/locality name (e.g., Mosman, Palm Beach)'
-                },
                 city: {
                   type: 'string'
                 },
                 state: {
                   type: 'string'
-                },
-                region: {
-                  type: 'string',
-                  description: 'Broader region (e.g., Northern Beaches, Yarra Valley)'
                 },
                 country: {
                   type: 'string',
@@ -128,37 +118,45 @@ serve(async (req) => {
               content: `You are a wedding trend analyst. Analyze Instagram to discover trending wedding venues and caterers.
 
 TASK: Find venues/caterers that are:
-1. Currently trending on Instagram (past 30 days)
-2. Getting high engagement on wedding posts
-3. Featured by couples, photographers, planners
+1. Currently trending on Instagram (MOST RECENT 30 days - prioritize posts from the last week)
+2. Getting high engagement on WEDDING-SPECIFIC posts (not just general events)
+3. Featured by couples, photographers, planners with REAL WEDDINGS (not styled shoots)
 4. Located in Australian cities
 
 For each discovery:
 - Identify the business name and Instagram handle
-- Specify the LOCALITY/SUBURB (e.g., Mosman, Yarra Valley) and broader region
-- Count recent wedding-related posts/mentions
-- Assess engagement (likes, comments, saves, shares)
-- Explain why it's trending (new venue, unique style, celebrity wedding, viral post, etc.)
-- Provide sample Instagram post URLs
+- Specify the city and state
+- Count recent WEDDING-RELATED posts/mentions (not corporate events or parties)
+- Assess engagement (likes, comments, saves, shares) on WEDDING content
+- Explain why it's trending NOW (recent viral post, new venue opening, celebrity wedding, unique style, etc.)
+- Provide sample Instagram post URLs from REAL WEDDINGS
 - Tag with country (Australia)
 
-Focus on:
-- New or newly popular venues
-- Unique/standout locations
-- Venues with authentic couple content (not just professional photos)
-- Caterers with innovative menus or stunning presentation`
+CRITICAL: Focus ONLY on wedding venues/caterers:
+- Must be suitable for WEDDINGS (not corporate event spaces)
+- Prioritize venues with RECENT (last 7-30 days) wedding posts
+- New or newly popular wedding venues
+- Unique/standout locations for ceremonies and receptions
+- Venues with authentic couple content (not just professional staging)
+- Caterers with innovative wedding menus or stunning presentation`
             },
             {
               role: 'user',
-              content: `Discover the top 5-10 trending wedding venues and caterers on Instagram right now in ${city}, Australia.
+              content: `Discover the top 5-10 MOST RECENTLY trending wedding venues and caterers on Instagram in ${city}, Australia.
+
+PRIORITIZE venues with posts from the LAST 7-14 DAYS. Focus on REAL WEDDINGS, not styled shoots or corporate events.
 
 Search for:
-- Wedding venue hashtags (#${city.toLowerCase()}weddingvenue, #${city.toLowerCase()}wedding, etc.)
-- Popular wedding photographers/planners in ${city}
-- Recent wedding posts with location tags
-- Trending caterers and food styling
+- Recent wedding venue posts (#${city.toLowerCase()}weddingvenue, #${city.toLowerCase()}wedding, #${city.toLowerCase()}weddings)
+- Posts by wedding photographers/planners in ${city} from the LAST 30 DAYS
+- Real couple wedding posts with location tags (MOST RECENT first)
+- Trending wedding caterers with recent food styling posts
+- Hashtags like #realwedding #${city.toLowerCase()}bride
 
-Return venues/caterers that are generating buzz in the past 30 days.`
+Return ONLY venues/caterers that:
+1. Have had WEDDING posts in the last 30 days (prioritize last 7-14 days)
+2. Are specifically for WEDDINGS (not general event spaces)
+3. Show REAL weddings with couples, not just staged photos`
             }
           ],
           temperature: 0.3,
@@ -215,10 +213,8 @@ Return venues/caterers that are generating buzz in the past 30 days.`
         name: d.name,
         type: d.type,
         location: d.location,
-        locality: d.locality,
         city: d.city,
         state: d.state,
-        region: d.region,
         country: d.country || 'Australia',
         instagram_handle: d.instagram_handle,
         instagram_posts_count: d.instagram_posts_count,
