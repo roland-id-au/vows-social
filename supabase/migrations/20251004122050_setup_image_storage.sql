@@ -32,8 +32,3 @@ CREATE POLICY "Service Role Update"
 ON storage.objects FOR UPDATE
 TO service_role
 USING (bucket_id = 'listing-images');
-
-COMMENT ON POLICY "Public Access" ON storage.objects IS 'Allow anyone to view listing images';
-COMMENT ON POLICY "Service Role Upload" ON storage.objects IS 'Allow edge functions to upload images';
-COMMENT ON POLICY "Service Role Delete" ON storage.objects IS 'Allow edge functions to delete images';
-COMMENT ON POLICY "Service Role Update" ON storage.objects IS 'Allow edge functions to update images';

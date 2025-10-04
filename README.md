@@ -71,8 +71,67 @@ Next.js web application with:
 ### Supabase (`supabase/`)
 Backend infrastructure including:
 - Database migrations
-- Edge functions
+- Edge functions (discovery, enrichment, cron jobs)
 - Authentication
+- Storage (images served via CDN)
+
+## Deployment
+
+### Production URLs
+- **Web App**: https://vows-social-drksci.vercel.app
+- **Custom Domain**: https://vows.social
+- **Supabase**: https://nidbhgqeyhrudtnizaya.supabase.co
+
+### Deploy Web App
+```bash
+# Automatic deployment via GitHub
+git push origin main  # Vercel auto-deploys
+
+# Manual deployment
+cd packages/web
+vercel --prod
+```
+
+### Deploy Supabase Functions
+```bash
+# Deploy all functions
+supabase functions deploy
+
+# Deploy specific function
+supabase functions deploy deep-research-venue
+```
+
+### Apply Database Migrations
+```bash
+supabase db push
+```
+
+## Features
+
+### Automated Discovery & Enrichment
+- **Cron Jobs**: Automated discovery runs daily via pg_cron
+- **Morning Pipeline**: Discovers trending venues from Instagram
+- **Deep Research**: Enriches listings with Perplexity AI
+- **Image Storage**: Downloads and stores images in Supabase Storage CDN
+- **Notifications**: Sends push notifications for new discoveries
+
+See [CRON_AND_LOGGING.md](CRON_AND_LOGGING.md) for details.
+
+### Image Management
+- **CDN Delivery**: All images served via Supabase Storage CDN
+- **Automatic Download**: Images downloaded during enrichment
+- **Format Validation**: JPEG, PNG, WebP, GIF supported
+- **Size Limits**: 10MB max per image
+
+See [IMAGE_STORAGE.md](IMAGE_STORAGE.md) for architecture details.
+
+### Continuous Discovery
+- **Daily Venue Discovery**: Rotating through Australian cities
+- **Service Discovery**: Photographers, florists, caterers, etc.
+- **Instagram Integration**: Trends based on social media engagement
+- **Automated Enrichment**: Photos, packages, pricing, reviews
+
+See [CONTINUOUS_DISCOVERY.md](packages/mobile/CONTINUOUS_DISCOVERY.md) for workflow.
 
 ## Scripts
 
@@ -81,3 +140,40 @@ Backend infrastructure including:
 - `npm run mobile:run` - Run mobile app
 - `npm run supabase:start` - Start local Supabase
 - `npm run supabase:stop` - Stop local Supabase
+
+## Architecture
+
+```
+┌─────────────────┐
+│   Web (Next.js) │ ──▶ Vercel (Auto-deploy from GitHub)
+└─────────────────┘
+
+┌─────────────────┐
+│ Mobile (Flutter)│ ──▶ App Store / Play Store
+└─────────────────┘
+
+┌─────────────────────────────────────────────────────┐
+│              Supabase Backend                       │
+│  ┌──────────────┐  ┌──────────────┐  ┌───────────┐ │
+│  │   Database   │  │ Edge Functions│  │  Storage  │ │
+│  │ (Postgres)   │  │  (Deno)       │  │   (CDN)   │ │
+│  │              │  │               │  │           │ │
+│  │ - Listings   │  │ - Discovery   │  │ - Images  │ │
+│  │ - Media      │  │ - Enrichment  │  │           │ │
+│  │ - Users      │  │ - Cron Jobs   │  │           │ │
+│  └──────────────┘  └──────────────┘  └───────────┘ │
+└─────────────────────────────────────────────────────┘
+           ▲
+           │
+    ┌──────┴────────┐
+    │ Perplexity AI │ (Discovery & Research)
+    └───────────────┘
+```
+
+## Documentation
+
+- [IMAGE_STORAGE.md](IMAGE_STORAGE.md) - Image storage architecture
+- [CRON_AND_LOGGING.md](CRON_AND_LOGGING.md) - Automated jobs and logging
+- [CONTINUOUS_DISCOVERY.md](packages/mobile/CONTINUOUS_DISCOVERY.md) - Discovery workflow
+- [ARCHITECTURE.md](packages/mobile/ARCHITECTURE.md) - System architecture
+- [DEPLOYMENT.md](packages/mobile/DEPLOYMENT.md) - Deployment guide
