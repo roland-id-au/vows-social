@@ -16,5 +16,3 @@ SELECT cron.schedule(
     ) AS request_id;
   $$
 );
-
-COMMENT ON EXTENSION cron IS 'Instagram vendor sync runs daily at 6 AM UTC';
