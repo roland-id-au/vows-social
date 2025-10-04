@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Header from '@/components/Header';
 import { Venue } from '@/lib/types';
-import { getVenueById, formatPriceRange, getVenueImages, getShortAddress } from '@/lib/supabase-service';
+import { getVenueById, getVenueBySlug, formatPriceRange, getVenueImages, getShortAddress } from '@/lib/supabase-service';
 import Link from 'next/link';
 
 export default function VenuePage() {
@@ -17,7 +17,11 @@ export default function VenuePage() {
   useEffect(() => {
     async function loadVenue() {
       if (id) {
-        const data = await getVenueById(id);
+        // Try slug first (SEO-friendly), fallback to UUID for old links
+        let data = await getVenueBySlug(id);
+        if (!data) {
+          data = await getVenueById(id);
+        }
         setVenue(data);
         setLoading(false);
       }

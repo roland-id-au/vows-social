@@ -131,6 +131,31 @@ export async function getVenueById(id: string): Promise<Venue | null> {
   }
 }
 
+export async function getVenueBySlug(slug: string): Promise<Venue | null> {
+  try {
+    const { data, error } = await supabase
+      .from('listings')
+      .select(
+        `
+        *,
+        listing_media(*),
+        listing_tags(tag_name, tags(*)),
+        packages(*),
+        instagram_posts(*)
+      `
+      )
+      .eq('slug', slug)
+      .single();
+
+    if (error) throw error;
+
+    return data as Venue;
+  } catch (error) {
+    console.error('Error fetching venue by slug:', error);
+    return null;
+  }
+}
+
 export function formatPrice(price: number): string {
   if (price >= 1000) {
     const k = price / 1000;
