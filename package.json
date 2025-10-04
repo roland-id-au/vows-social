@@ -15,7 +15,7 @@
     "supabase:stop": "supabase stop",
     "supabase:status": "supabase status",
     "db:reset": "supabase db reset",
-    "db:clear": "echo '⚠️  This will delete all data! Press Ctrl+C to cancel or wait 5s...' && sleep 5 && supabase db reset --db-only"
+    "db:clear": "echo '⚠️  This will delete all data! Press Ctrl+C to cancel or wait 5s...' && sleep 5 && supabase db reset"
   },
   "devDependencies": {}
 }
