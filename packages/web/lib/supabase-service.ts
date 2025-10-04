@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Venue, SearchFilters } from './types';
+import { Venue, SearchFilters, PriceData, LocationData } from './types';
 
 const VENUES_PER_PAGE = 12;
 
