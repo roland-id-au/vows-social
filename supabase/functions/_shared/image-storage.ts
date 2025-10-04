@@ -1,0 +1,163 @@
+/**
+ * Image Storage Helper for Supabase Edge Functions
+ * Downloads external images and uploads them to Supabase Storage
+ */
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const BUCKET_NAME = 'listing-images'
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024 // 10MB
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+export interface ImageUploadResult {
+  url: string
+  path: string
+  size: number
+  contentType: string
+}
+
+/**
+ * Download an image from a URL and upload it to Supabase Storage
+ */
+export async function downloadAndStoreImage(
+  supabase: any,
+  imageUrl: string,
+  listingId: string,
+  index: number
+): Promise<ImageUploadResult | null> {
+  try {
+    console.log(`Downloading image ${index + 1}: ${imageUrl.substring(0, 80)}...`)
+
+    // Download the image
+    const response = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; VowsSocial/1.0; +https://vows.social)'
+      }
+    })
+
+    if (!response.ok) {
+      console.error(`Failed to download image: HTTP ${response.status}`)
+      return null
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
+      console.error(`Invalid content type: ${contentType}`)
+      return null
+    }
+
+    const arrayBuffer = await response.arrayBuffer()
+    const size = arrayBuffer.byteLength
+
+    if (size > MAX_IMAGE_SIZE) {
+      console.error(`Image too large: ${size} bytes (max ${MAX_IMAGE_SIZE})`)
+      return null
+    }
+
+    // Generate a unique filename
+    const extension = contentType.split('/')[1]
+    const timestamp = Date.now()
+    const random = Math.random().toString(36).substring(7)
+    const filename = `${listingId}/${timestamp}-${index}-${random}.${extension}`
+
+    console.log(`Uploading to storage: ${filename} (${(size / 1024).toFixed(2)} KB)`)
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .upload(filename, arrayBuffer, {
+        contentType,
+        cacheControl: '31536000', // 1 year
+        upsert: false
+      })
+
+    if (error) {
+      console.error(`Storage upload error: ${error.message}`)
+      return null
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filename)
+
+    console.log(` Uploaded successfully: ${urlData.publicUrl}`)
+
+    return {
+      url: urlData.publicUrl,
+      path: filename,
+      size,
+      contentType
+    }
+  } catch (error) {
+    console.error(`Error processing image ${index + 1}:`, error)
+    return null
+  }
+}
+
+/**
+ * Download and store multiple images
+ */
+export async function downloadAndStoreImages(
+  supabase: any,
+  imageUrls: string[],
+  listingId: string,
+  maxImages: number = 10
+): Promise<ImageUploadResult[]> {
+  const results: ImageUploadResult[] = []
+  const urlsToProcess = imageUrls.slice(0, maxImages)
+
+  console.log(`Processing ${urlsToProcess.length} images for listing ${listingId}`)
+
+  for (let i = 0; i < urlsToProcess.length; i++) {
+    const result = await downloadAndStoreImage(supabase, urlsToProcess[i], listingId, i)
+
+    if (result) {
+      results.push(result)
+    }
+
+    // Rate limiting between downloads
+    if (i < urlsToProcess.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 500))
+    }
+  }
+
+  console.log(`Successfully stored ${results.length}/${urlsToProcess.length} images`)
+
+  return results
+}
+
+/**
+ * Delete all images for a listing
+ */
+export async function deleteListingImages(
+  supabase: any,
+  listingId: string
+): Promise<boolean> {
+  try {
+    const { data: files, error: listError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list(listingId)
+
+    if (listError || !files || files.length === 0) {
+      return true
+    }
+
+    const filePaths = files.map((file: any) => `${listingId}/${file.name}`)
+
+    const { error: deleteError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove(filePaths)
+
+    if (deleteError) {
+      console.error(`Error deleting images: ${deleteError.message}`)
+      return false
+    }
+
+    console.log(`Deleted ${filePaths.length} images for listing ${listingId}`)
+    return true
+  } catch (error) {
+    console.error(`Error deleting listing images:`, error)
+    return false
+  }
+}

@@ -3,6 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { downloadAndStoreImages } from '../_shared/image-storage.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -353,13 +354,6 @@ Location hint: ${location}`
     console.log(`Research complete: ${venueData.title}`)
     console.log(`Found ${venueData.image_urls?.length || 0} images`)
 
-    // Validate and filter images
-    const validatedImages = await validateImages(venueData.image_urls || [])
-
-    if (validatedImages.length < 3) {
-      console.warn(`Warning: Only ${validatedImages.length} valid images found`)
-    }
-
     // Save listing to database
     const listingData = {
       source_type: 'perplexity_deep_research',
@@ -416,24 +410,43 @@ Location hint: ${location}`
 
     console.log(`Venue saved with ID: ${listing.id}`)
 
-    // Save validated images
-    if (validatedImages.length > 0) {
-      const mediaRecords = validatedImages.map((url, index) => ({
-        listing_id: listing.id,
-        media_type: 'image',
-        url: url,
-        source: 'perplexity_research',
-        order: index
-      }))
+    // Download and store images in Supabase Storage
+    if (venueData.image_urls && venueData.image_urls.length > 0) {
+      const storedImages = await downloadAndStoreImages(
+        supabase,
+        venueData.image_urls,
+        listing.id,
+        10 // max 10 images
+      )
 
-      const { error: mediaError } = await supabase
-        .from('listing_media')
-        .insert(mediaRecords)
+      if (storedImages.length < 3) {
+        console.warn(`Warning: Only ${storedImages.length} images successfully stored`)
+      }
 
-      if (mediaError) {
-        console.error('Error saving images:', mediaError)
-      } else {
-        console.log(`Saved ${mediaRecords.length} images`)
+      // Save image records to database
+      if (storedImages.length > 0) {
+        const mediaRecords = storedImages.map((img, index) => ({
+          listing_id: listing.id,
+          media_type: 'image',
+          url: img.url,
+          source: 'perplexity_research',
+          order_index: index,
+          metadata: {
+            size: img.size,
+            content_type: img.contentType,
+            storage_path: img.path
+          }
+        }))
+
+        const { error: mediaError } = await supabase
+          .from('listing_media')
+          .insert(mediaRecords)
+
+        if (mediaError) {
+          console.error('Error saving image records:', mediaError)
+        } else {
+          console.log(`Saved ${mediaRecords.length} images to Supabase Storage`)
+        }
       }
     }
 
