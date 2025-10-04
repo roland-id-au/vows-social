@@ -135,11 +135,23 @@ See [CONTINUOUS_DISCOVERY.md](packages/mobile/CONTINUOUS_DISCOVERY.md) for workf
 
 ## Scripts
 
+### Web Development
 - `npm run web:dev` - Start web dev server
 - `npm run web:build` - Build web for production
+- `npm run web:start` - Start production server
+
+### Mobile Development
 - `npm run mobile:run` - Run mobile app
+- `npm run mobile:build` - Build mobile app
+
+### Supabase
 - `npm run supabase:start` - Start local Supabase
 - `npm run supabase:stop` - Stop local Supabase
+- `npm run supabase:status` - Check Supabase status
+
+### Database
+- `npm run db:reset` - Reset local database (re-run all migrations)
+- `npm run db:clear` - Clear all data (⚠️ destructive, 5s warning)
 
 ## Architecture
 
