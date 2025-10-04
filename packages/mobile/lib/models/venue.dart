@@ -90,25 +90,50 @@ class Venue {
   }
 
   factory Venue.fromJson(Map<String, dynamic> json) {
+    // Parse tags from listing_tags junction table
+    List<VenueTag> parseTags() {
+      if (json['listing_tags'] != null) {
+        return (json['listing_tags'] as List)
+            .map((lt) {
+              final tagData = lt['tags'];
+              if (tagData != null) {
+                return VenueTag.fromJson(tagData);
+              }
+              return null;
+            })
+            .whereType<VenueTag>()
+            .toList();
+      }
+      return [];
+    }
+
+    // Parse image URLs from listing_media table
+    List<String> parseImageUrls() {
+      if (json['listing_media'] != null) {
+        return (json['listing_media'] as List)
+            .map((media) => media['url'] as String?)
+            .whereType<String>()
+            .toList();
+      }
+      return [];
+    }
+
     return Venue(
       id: json['id'],
-      title: json['title'],
-      description: json['description'],
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
       category: VenueCategory.values.firstWhere(
         (e) => e.name == json['category'],
         orElse: () => VenueCategory.venue,
       ),
-      tags: (json['tags'] as List?)
-              ?.map((tag) => VenueTag.fromJson(tag))
-              .toList() ??
-          [],
+      tags: parseTags(),
       location: LocationData.fromJson(json['location_data']),
       priceData: PriceData.fromJson(json['price_data']),
       minCapacity: json['min_capacity'] ?? 0,
       maxCapacity: json['max_capacity'] ?? 0,
       rating: (json['rating'] ?? 0.0).toDouble(),
       reviewCount: json['review_count'] ?? 0,
-      imageUrls: List<String>.from(json['image_urls'] ?? []),
+      imageUrls: parseImageUrls(),
       amenities: List<String>.from(json['amenities'] ?? []),
       style: VenueStyle.values.firstWhere(
         (e) => e.name == json['style'],

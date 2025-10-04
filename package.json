@@ -1,0 +1,19 @@
+{
+  "name": "vows-social",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev --workspace=@vows-social/web",
+    "web:build": "npm run build --workspace=@vows-social/web",
+    "web:start": "npm run start --workspace=@vows-social/web",
+    "mobile:run": "cd packages/mobile && flutter run",
+    "mobile:build": "cd packages/mobile && flutter build",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:status": "supabase status"
+  },
+  "devDependencies": {}
+}

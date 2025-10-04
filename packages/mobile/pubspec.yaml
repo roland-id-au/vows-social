@@ -40,6 +40,8 @@ dependencies:
   intl: any
   uuid: any
   url_launcher: any
+  flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
 
 dev_dependencies:
   flutter_test:

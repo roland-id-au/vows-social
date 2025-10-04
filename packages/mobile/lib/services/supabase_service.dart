@@ -26,6 +26,8 @@ class SupabaseService {
       var query = _client.from('listings').select('''
         *,
         listing_media(*),
+        listing_tags(tag_name, tags(*)),
+        packages(*),
         instagram_posts(*)
       ''');
 
@@ -83,8 +85,9 @@ class SupabaseService {
           .select('''
             *,
             listing_media(*),
-            instagram_posts(*),
-            reviews(*)
+            listing_tags(tag_name, tags(*)),
+            packages(*),
+            instagram_posts(*)
           ''')
           .eq('id', id)
           .single();
@@ -102,7 +105,10 @@ class SupabaseService {
           .from('listings')
           .select('''
             *,
-            listing_media(*)
+            listing_media(*),
+            listing_tags(tag_name, tags(*)),
+            packages(*),
+            instagram_posts(*)
           ''')
           .order('created_at', ascending: false)
           .limit(limit);
@@ -125,7 +131,10 @@ class SupabaseService {
             listing_id,
             listings(
               *,
-              listing_media(*)
+              listing_media(*),
+              listing_tags(tag_name, tags(*)),
+              packages(*),
+              instagram_posts(*)
             )
           ''')
           .eq('user_id', userId);
