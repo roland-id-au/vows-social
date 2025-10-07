@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
     // Get all listings with Instagram handles
     const { data: listings, error: listingsError } = await supabase
       .from('listings')
-      .select('id, instagram_handle, city, country, category')
+      .select('id, instagram_handle, location_data, country, category')
       .not('instagram_handle', 'is', null)
       .neq('instagram_handle', '')
       .limit(50) // Process 50 at a time
@@ -299,7 +299,7 @@ Deno.serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            action: 'get_user_posts',
+            action: 'monitor_user',
             username: handle,
             limit: 25
           })
@@ -313,14 +313,22 @@ Deno.serve(async (req) => {
 
         const instagrapiData = await instagrapiResponse.json()
 
-        if (!instagrapiData.success || !instagrapiData.user) {
-          logger.warn(`No data for @${handle}`)
+        if (!instagrapiData.success) {
+          logger.warn(`No data for @${handle}: ${instagrapiData.error || 'Unknown error'}`)
           totalErrors++
           continue
         }
 
-        const user = instagrapiData.user
         const posts = instagrapiData.posts || []
+
+        if (posts.length === 0) {
+          logger.info(`@${handle} has no posts`)
+          continue
+        }
+
+        // Extract city from location_data
+        const city = listing.location_data?.city || null
+        const country = listing.country || 'Australia'
 
         // Create or update instagram_account
         let accountId = existingAccount?.id
@@ -330,15 +338,8 @@ Deno.serve(async (req) => {
             .from('instagram_accounts')
             .insert({
               listing_id: listing.id,
-              instagram_id: user.pk || handle,
+              instagram_id: handle, // Use username as ID since we don't have pk
               username: handle,
-              full_name: user.full_name,
-              bio: user.biography,
-              profile_picture_url: user.profile_pic_url,
-              followers_count: user.follower_count || 0,
-              following_count: user.following_count || 0,
-              media_count: user.media_count || 0,
-              account_type: user.is_business ? 'business' : 'personal',
               sync_status: 'active',
               last_synced_at: new Date().toISOString()
             })
@@ -358,12 +359,6 @@ Deno.serve(async (req) => {
           await supabase
             .from('instagram_accounts')
             .update({
-              full_name: user.full_name,
-              bio: user.biography,
-              profile_picture_url: user.profile_pic_url,
-              followers_count: user.follower_count || 0,
-              following_count: user.following_count || 0,
-              media_count: user.media_count || 0,
               sync_status: 'active',
               last_synced_at: new Date().toISOString()
             })
@@ -381,7 +376,7 @@ Deno.serve(async (req) => {
             const { data: existingPost } = await supabase
               .from('instagram_posts')
               .select('id')
-              .eq('instagram_media_id', post.pk || post.id)
+              .eq('instagram_media_id', post.id.toString())
               .single()
 
             if (existingPost) {
@@ -389,40 +384,51 @@ Deno.serve(async (req) => {
               await supabase
                 .from('instagram_posts')
                 .update({
-                  like_count: post.like_count || 0,
-                  comment_count: post.comment_count || 0
+                  like_count: post.likes || 0,
+                  comment_count: post.comments || 0
                 })
                 .eq('id', existingPost.id)
               continue
             }
 
             // Extract metadata
-            const caption = post.caption_text || post.caption || ''
+            const caption = post.caption || ''
             const hashtags = extractHashtags(caption)
             const mentions = extractMentions(caption)
             const wedding_related = isWeddingRelated(caption, hashtags)
             const themes = detectThemes(caption, hashtags)
 
+            // Get media URL (first image from array)
+            const media_url = post.image_urls?.[0] || null
+
+            // Map media type
+            let mediaType = 'IMAGE'
+            if (post.media_type === 2 || post.is_video) {
+              mediaType = 'VIDEO'
+            } else if (post.media_type === 8) {
+              mediaType = 'CAROUSEL_ALBUM'
+            }
+
             // Insert new post
             const { error: insertError } = await supabase
               .from('instagram_posts')
               .insert({
-                instagram_media_id: post.pk || post.id,
+                instagram_media_id: post.id.toString(),
                 instagram_account_id: accountId,
-                media_type: post.media_type === 1 ? 'IMAGE' : post.media_type === 2 ? 'VIDEO' : 'CAROUSEL_ALBUM',
-                media_url: post.thumbnail_url || post.image_versions2?.candidates?.[0]?.url,
-                thumbnail_url: post.thumbnail_url,
-                permalink: `https://www.instagram.com/p/${post.code}/`,
+                media_type: mediaType,
+                media_url: media_url,
+                thumbnail_url: media_url,
+                permalink: `https://www.instagram.com/p/${post.id}/`,
                 caption: caption,
-                posted_at: post.taken_at ? new Date(post.taken_at * 1000).toISOString() : new Date().toISOString(),
+                posted_at: post.posted_at,
                 hashtags: hashtags,
                 mentions: mentions,
-                like_count: post.like_count || 0,
-                comment_count: post.comment_count || 0,
+                like_count: post.likes || 0,
+                comment_count: post.comments || 0,
                 is_wedding_related: wedding_related,
                 detected_themes: themes,
-                city: listing.city,
-                country: listing.country,
+                city: city,
+                country: country,
                 discovered_via: 'vendor_sync',
                 processed: true,
                 processed_at: new Date().toISOString()
