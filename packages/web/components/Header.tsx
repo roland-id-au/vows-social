@@ -39,23 +39,21 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center items-center py-3">
-          {/* Category Navigation with Logo */}
+        <div className="flex justify-center items-center py-3 relative">
+          {/* Logo - absolutely positioned on left when visible */}
+          <Link
+            href="/"
+            className={`absolute left-4 transition-all duration-300 ${
+              showLogo ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <h1 className={`${yeseva.className} text-sm text-gray-900 whitespace-nowrap`}>
+              The Vows Social
+            </h1>
+          </Link>
+
+          {/* Category Navigation - stays centered */}
           <nav className="flex items-center gap-2">
-            {/* Logo - grouped with badges */}
-            <Link
-              href="/"
-              className={`flex-shrink-0 transition-all duration-300 ${
-                showLogo ? 'opacity-100 w-auto mr-2' : 'opacity-0 w-0 overflow-hidden'
-              }`}
-            >
-              <h1 className={`${yeseva.className} text-sm text-gray-900 whitespace-nowrap`}>
-                The Vows Social
-              </h1>
-            </Link>
-
-            {showLogo && <div className="w-px h-4 bg-gray-300" />}
-
             {categories.map((category) => (
               <button
                 key={category.id || 'all'}
