@@ -184,7 +184,13 @@ class Venue {
 
 enum VenueCategory {
   venue,
-  catering,
+  caterer,
+  florist,
+  photographer,
+  videographer,
+  musician,
+  stylist,
+  planner,
   experience,
 }
 

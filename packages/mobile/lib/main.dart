@@ -39,17 +39,62 @@ class VowSocietyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.pink.shade400,
-          primary: Colors.pink.shade400,
+          seedColor: Colors.black,
+          primary: Colors.black,
+          secondary: Colors.grey.shade600,
+          brightness: Brightness.light,
         ),
         useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(),
+        textTheme: GoogleFonts.interTextTheme().copyWith(
+          // Yeseva One for branding elements
+          displayLarge: GoogleFonts.yesevaOne(
+            fontSize: 48,
+            fontWeight: FontWeight.w400,
+            color: Colors.black87,
+          ),
+          displayMedium: GoogleFonts.yesevaOne(
+            fontSize: 36,
+            fontWeight: FontWeight.w400,
+            color: Colors.black87,
+          ),
+          displaySmall: GoogleFonts.yesevaOne(
+            fontSize: 28,
+            fontWeight: FontWeight.w400,
+            color: Colors.black87,
+          ),
+          // Inter for body text
+          bodyLarge: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w400,
+          ),
+          bodyMedium: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+          ),
+          bodySmall: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+          ),
+          titleLarge: GoogleFonts.inter(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+          ),
+          titleMedium: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          titleSmall: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.white.withOpacity(0.8),
           elevation: 0,
-          iconTheme: IconThemeData(color: Colors.black87),
-          titleTextStyle: TextStyle(
+          scrolledUnderElevation: 0,
+          iconTheme: const IconThemeData(color: Colors.black87),
+          titleTextStyle: GoogleFonts.inter(
             color: Colors.black87,
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -57,19 +102,35 @@ class VowSocietyApp extends StatelessWidget {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
             elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            textStyle: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.black, width: 2),
           ),
           filled: true,
           fillColor: Colors.grey[50],
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
       routerConfig: _router,
