@@ -1,5 +1,5 @@
 import { Venue } from '@/lib/types';
-import { getVenueById, getVenueBySlug, formatPriceRange, getVenueImages, getShortAddress, parseVenuePermalink } from '@/lib/supabase-service';
+import { getVenueById, getVenueBySlug, formatPriceRange, getListingImages, getShortAddress, parseVenuePermalink } from '@/lib/supabase-service';
 import VenueDetailClient from './VenueDetailClient';
 
 export default async function VenuePage({ params }: { params: Promise<{ id: string }> }) {
@@ -36,7 +36,7 @@ export default async function VenuePage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const images = getVenueImages(venue);
+  const images = getListingImages(venue);
   const shortAddress = getShortAddress(venue.location_data);
 
   return <VenueDetailClient venue={venue} images={images} shortAddress={shortAddress} />;
