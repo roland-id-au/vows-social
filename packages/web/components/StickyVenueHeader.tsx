@@ -13,15 +13,13 @@ interface StickyVenueHeaderProps {
   onContactClick?: () => void;
   isSaved?: boolean;
   onSaveToggle?: () => void;
-  isTrending?: boolean;
 }
 
 export default function StickyVenueHeader({
   venueName,
   onContactClick,
   isSaved = false,
-  onSaveToggle,
-  isTrending = false
+  onSaveToggle
 }: StickyVenueHeaderProps) {
   const [activeSection, setActiveSection] = useState('');
 
@@ -103,11 +101,6 @@ export default function StickyVenueHeader({
 
             <h2 className="hidden lg:flex items-center gap-2 font-semibold text-base md:text-lg text-white truncate">
               {venueName}
-              {isTrending && (
-                <span className="bg-gradient-to-r from-orange-500 to-pink-500 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
-                  🔥 Trending
-                </span>
-              )}
             </h2>
           </div>
 

@@ -12,6 +12,7 @@ interface HeroGalleryProps {
   rating?: number;
   reviewCount?: number;
   onViewAll?: () => void;
+  isTrending?: boolean;
 }
 
 export default function HeroGallery({
@@ -21,7 +22,8 @@ export default function HeroGallery({
   category,
   rating,
   reviewCount,
-  onViewAll
+  onViewAll,
+  isTrending = false
 }: HeroGalleryProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -90,6 +92,15 @@ export default function HeroGallery({
 
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70 z-20 pointer-events-none" />
+
+      {/* Trending Badge - Top Right */}
+      {isTrending && (
+        <div className="absolute top-4 right-4 z-30">
+          <div className="bg-gradient-to-r from-orange-500 to-pink-500 px-4 py-2 rounded-full text-sm font-bold text-white shadow-lg backdrop-blur-sm">
+            🔥 Trending
+          </div>
+        </div>
+      )}
 
       {/* Navigation Arrows */}
       {images.length > 1 && (

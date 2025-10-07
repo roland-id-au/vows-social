@@ -65,7 +65,6 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         onContactClick={scrollToContact}
         isSaved={isSaved}
         onSaveToggle={handleSaveToggle}
-        isTrending={isTrending}
       />
 
       {/* Hero Gallery - Full Width, with top padding for fixed header */}
@@ -78,6 +77,7 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         rating={venue.rating}
         reviewCount={venue.review_count}
         onViewAll={() => openLightbox(0)}
+        isTrending={isTrending}
       />
 
         {/* Instagram Posts Carousel */}
