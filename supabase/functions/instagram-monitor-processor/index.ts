@@ -63,7 +63,7 @@ serve(async (req) => {
       .eq('id', task.id)
 
     // Call Python instagrapi service to fetch posts
-    const instagrapiResponse = await fetch(`${supabaseUrl}/functions/v1/instagrapi-scraper`, {
+    const instagrapiResponse = await fetch(`${supabaseUrl}/functions/v1/instagram-api`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,

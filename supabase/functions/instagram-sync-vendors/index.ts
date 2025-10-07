@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
         // Fetch account profile and posts using instagrapi
         logger.info(`Fetching Instagram profile for @${handle}`)
 
-        const instagrapiResponse = await fetch(`${supabaseUrl}/functions/v1/instagrapi-scraper`, {
+        const instagrapiResponse = await fetch(`${supabaseUrl}/functions/v1/instagram-api`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${supabaseKey}`,

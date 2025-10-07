@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
 
     logger.info('Submitting challenge code to Instagram API')
 
-    const igResponse = await fetch(`${supabaseUrl}/functions/v1/instagrapi-scraper`, {
+    const igResponse = await fetch(`${supabaseUrl}/functions/v1/instagram-api`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
