@@ -21,14 +21,10 @@ export default function StickyVenueHeader({
   isSaved = false,
   onSaveToggle
 }: StickyVenueHeaderProps) {
-  const [isVisible, setIsVisible] = useState(false);
   const [activeSection, setActiveSection] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show header after scrolling 100px
-      setIsVisible(window.scrollY > 100);
-
       // Update active section based on scroll position
       const sections = ['photos', 'details', 'pricing', 'reviews', 'contact'];
       const scrollPosition = window.scrollY + 100;
@@ -89,11 +85,7 @@ export default function StickyVenueHeader({
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-gray-800 shadow-lg transition-all duration-300 ${
-        isVisible
-          ? 'translate-y-0 opacity-100'
-          : '-translate-y-full opacity-0 pointer-events-none'
-      }`}
+      className="fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-gray-800 shadow-lg"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">

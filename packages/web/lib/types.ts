@@ -104,9 +104,11 @@ export interface InstagramPost {
   is_wedding_related?: boolean;
   wedding_type?: string[];
   detected_themes?: string[];
+  detected_vendors?: string[];
   city?: string;
   state?: string;
   country?: string;
+  discovered_via?: string; // 'vendor_sync', 'hashtag_search', 'location_search', 'mention_search'
 }
 
 export interface ListingMedia {
@@ -120,6 +122,7 @@ export interface ListingMedia {
 export interface Venue {
   id: string;
   title: string;
+  short_name?: string;
   slug: string;
   description: string;
   category: string;

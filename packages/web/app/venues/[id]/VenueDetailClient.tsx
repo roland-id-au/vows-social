@@ -55,7 +55,7 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky Header (hidden initially, appears on scroll) */}
+      {/* Sticky Header - Always visible */}
       <StickyVenueHeader
         venueName={venue.title}
         onContactClick={scrollToContact}
@@ -63,8 +63,9 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         onSaveToggle={handleSaveToggle}
       />
 
-      {/* Hero Gallery - Full Width, No Header */}
-      <HeroGallery
+      {/* Hero Gallery - Full Width, with top padding for fixed header */}
+      <div className="pt-16">
+        <HeroGallery
         images={images}
         title={venue.title}
         location={shortAddress}
@@ -74,10 +75,11 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         onViewAll={() => openLightbox(0)}
       />
 
-      {/* Instagram Posts Carousel */}
-      {instagramPosts.length > 0 && (
-        <InstagramCarousel posts={instagramPosts} />
-      )}
+        {/* Instagram Posts Carousel */}
+        {instagramPosts.length > 0 && (
+          <InstagramCarousel posts={instagramPosts} />
+        )}
+      </div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
