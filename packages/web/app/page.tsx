@@ -48,46 +48,43 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      {/* Hero Section */}
-      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <h1 className={`text-5xl md:text-7xl text-gray-900 mb-6 ${yeseva.className}`}>
-              Find Your Perfect Wedding Team
+      {/* Hero Section - Knot-style */}
+      <div className="relative bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="text-center mb-8">
+            <h1 className={`text-3xl md:text-4xl text-gray-900 mb-3 ${yeseva.className}`}>
+              Your Wedding, Simplified
             </h1>
-            <p className="text-xl text-gray-700 mb-2">
-              Discover venues, vendors, and wedding inspiration
-            </p>
-            <p className="text-lg text-gray-600">
-              Everything you need for your special day, in one place
+            <p className="text-base md:text-lg text-gray-600">
+              Find vendors you'll love
             </p>
           </div>
 
-          <div className="max-w-3xl mx-auto">
+          <div className="max-w-2xl mx-auto mb-6">
             <SearchBar
               onSearch={handleSearch}
-              placeholder="Search by city, suburb, or region..."
+              placeholder="Search by location..."
             />
           </div>
         </div>
       </div>
 
       {/* Category Tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40">
+      <div className="bg-white border-y border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide gap-2 py-4">
+          <div className="flex overflow-x-auto scrollbar-hide gap-2 py-3">
             {categories.map((category) => (
               <button
                 key={category.id || 'all'}
                 onClick={() => handleCategoryChange(category.id)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full font-semibold whitespace-nowrap transition-all ${
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition-all ${
                   activeCategory === category.id
-                    ? 'bg-primary-600 text-white shadow-lg scale-105'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
-                <span className="text-xl">{category.icon}</span>
-                <span>{category.label}</span>
+                <span className="text-lg">{category.icon}</span>
+                <span className="text-sm">{category.label}</span>
               </button>
             ))}
           </div>
@@ -96,20 +93,22 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Trending Section Header */}
+        {/* Section Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              <h2 className="text-2xl font-bold text-gray-900 mb-1">
                 {filters.location
-                  ? `${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Results' : 'Results'} in ${filters.location}`
-                  : `Trending ${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Vendors' : 'Vendors'}`
+                  ? `${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Vendors' : 'Vendors'} in ${filters.location}`
+                  : activeCategory
+                    ? VenueCategoryDisplay[activeCategory] || 'Vendors'
+                    : 'Discover Wedding Vendors'
                 }
               </h2>
-              <p className="text-gray-600">
+              <p className="text-sm text-gray-600">
                 {filters.location
-                  ? 'Browse local wedding professionals'
-                  : 'Popular choices from real couples'}
+                  ? 'Local wedding professionals near you'
+                  : 'Top-rated vendors and new additions'}
               </p>
             </div>
           </div>
@@ -120,53 +119,61 @@ export default function Home() {
 
         {/* Inspiration Section */}
         {!filters.location && !activeCategory && (
-          <div className="mt-20">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl font-bold text-gray-900 mb-3">
-                Wedding Inspiration & Trends
+          <div className="mt-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Get Inspired
               </h2>
-              <p className="text-gray-600 text-lg">
-                Real weddings, style guides, and trending ideas
-              </p>
+              <button className="text-sm font-semibold text-primary-600 hover:text-primary-700">
+                See all →
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Placeholder cards for trends */}
-              <div className="bg-white rounded-xl shadow-md overflow-hidden group cursor-pointer hover:shadow-xl transition-shadow">
-                <div className="aspect-[4/3] bg-gradient-to-br from-rose-100 to-pink-100 flex items-center justify-center">
-                  <span className="text-6xl">💒</span>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <button className="group text-left">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg overflow-hidden mb-3">
+                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
+                    💒
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Real Weddings</h3>
-                  <p className="text-gray-600">
-                    Get inspired by real couples and their special days
-                  </p>
-                </div>
-              </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                  Real Weddings
+                </h3>
+                <p className="text-sm text-gray-600">
+                  See how couples brought their vision to life
+                </p>
+              </button>
 
-              <div className="bg-white rounded-xl shadow-md overflow-hidden group cursor-pointer hover:shadow-xl transition-shadow">
-                <div className="aspect-[4/3] bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                  <span className="text-6xl">✨</span>
+              <button className="group text-left">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg overflow-hidden mb-3">
+                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
+                    ✨
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Style Guides</h3>
-                  <p className="text-gray-600">
-                    Explore wedding styles from modern to classic
-                  </p>
-                </div>
-              </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                  Style Guides
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Explore colors, themes, and wedding styles
+                </p>
+              </button>
 
-              <div className="bg-white rounded-xl shadow-md overflow-hidden group cursor-pointer hover:shadow-xl transition-shadow">
-                <div className="aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                  <span className="text-6xl">📈</span>
+              <button className="group text-left">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg overflow-hidden mb-3">
+                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
+                    📈
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">Trending Now</h3>
-                  <p className="text-gray-600">
-                    See what's popular in weddings this season
-                  </p>
-                </div>
-              </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
+                  Trending Now
+                </h3>
+                <p className="text-sm text-gray-600">
+                  What's hot in weddings this season
+                </p>
+              </button>
             </div>
           </div>
         )}
