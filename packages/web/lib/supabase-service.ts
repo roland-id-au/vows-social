@@ -25,7 +25,7 @@ export async function getTrendingListings(
       `,
         { count: 'exact' }
       )
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .range(from, to);
 
     if (error) throw error;
