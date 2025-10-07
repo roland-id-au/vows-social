@@ -112,6 +112,7 @@ export default function FeedGrid({ filters }: FeedGridProps) {
             key={feedItem.type === 'listing' ? (feedItem.item as Venue).id : (feedItem.item as InstagramPost).id + '-' + index}
             item={feedItem.item}
             type={feedItem.type}
+            index={index}
           />
         ))}
       </div>

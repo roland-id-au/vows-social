@@ -8,9 +8,10 @@ import { formatPriceRange, getShortAddress, generateVenuePermalink, getListingIm
 interface FeedCardProps {
   item: Venue | InstagramPost;
   type: 'listing' | 'instagram';
+  index?: number;
 }
 
-export default function FeedCard({ item, type }: FeedCardProps) {
+export default function FeedCard({ item, type, index = 0 }: FeedCardProps) {
   if (type === 'instagram') {
     const post = item as InstagramPost;
     return (
@@ -144,19 +145,21 @@ export default function FeedCard({ item, type }: FeedCardProps) {
             )}
           </div>
 
-          {/* Top right badges: New and Trending */}
-          <div className="absolute top-3 right-3 flex flex-col gap-2">
-            {isTrending && (
-              <div className="bg-gradient-to-r from-orange-500 to-pink-500 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-lg">
-                🔥 Trending
-              </div>
-            )}
-            {isNew && !isTrending && (
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-lg">
-                ✨ New
-              </div>
-            )}
-          </div>
+          {/* Top right badges: New and Trending (only first row) */}
+          {index < 4 && (
+            <div className="absolute top-3 right-3 flex flex-col gap-2">
+              {isTrending && (
+                <div className="bg-gradient-to-r from-orange-500 to-pink-500 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-lg">
+                  🔥 Trending
+                </div>
+              )}
+              {isNew && !isTrending && (
+                <div className="bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 rounded-full text-xs font-semibold text-white shadow-lg">
+                  ✨ New
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Content */}
