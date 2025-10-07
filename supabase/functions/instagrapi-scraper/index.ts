@@ -34,14 +34,36 @@ async function getInstagramClient() {
 
   // Login if not already logged in
   if (!isLoggedIn) {
+    // Try Facebook login first (for accounts linked to Facebook)
+    const fbPhone = Deno.env.get('INSTAGRAM_FB_PHONE')
+    const fbPassword = Deno.env.get('INSTAGRAM_FB_PASSWORD')
+
+    if (fbPhone && fbPassword) {
+      try {
+        console.log('Attempting Facebook login for Instagram...')
+
+        // Facebook login flow
+        await ig.account.loginWithFacebook(fbPhone, fbPassword)
+
+        isLoggedIn = true
+        console.log('Logged in to Instagram via Facebook')
+        return ig
+      } catch (fbError) {
+        console.error('Facebook login failed:', fbError)
+        // Fall through to regular Instagram login
+      }
+    }
+
+    // Fallback to regular Instagram login
     const username = Deno.env.get('INSTAGRAM_USERNAME')
     const password = Deno.env.get('INSTAGRAM_PASSWORD')
 
     if (!username || !password) {
-      throw new Error('Instagram credentials not configured')
+      throw new Error('Neither Facebook nor Instagram credentials configured')
     }
 
     try {
+      console.log(`Attempting Instagram login as @${username}...`)
       await ig.account.login(username, password)
       isLoggedIn = true
       console.log(`Logged in to Instagram as @${username}`)
