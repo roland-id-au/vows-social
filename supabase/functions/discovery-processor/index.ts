@@ -61,11 +61,22 @@ serve(async (req) => {
       })
       .eq('id', task.id)
 
+    // Fetch existing listings to exclude from discovery
+    const { data: existingListings } = await supabase
+      .from('listings')
+      .select('title, city, country')
+      .eq('city', task.city)
+      .eq('country', task.country)
+      .eq('category', task.service_type)
+
+    const existingNames = existingListings?.map(l => l.title) || []
+    console.log(`📋 Found ${existingNames.length} existing listings to exclude`)
+
     // Call Perplexity to discover vendors
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY')!
 
     // Include location in cache key to invalidate old cache entries that didn't have location
-    const cacheKey = `discovery-v2-${task.query}-${task.location}-${task.service_type}`
+    const cacheKey = `discovery-v3-${task.query}-${task.location}-${task.service_type}`
 
     let discoveries: any[] = []
     let apiCostUsd = 0
@@ -82,13 +93,20 @@ serve(async (req) => {
     } else {
       console.log('❌ Cache miss - calling Perplexity API')
 
-      // The query already includes location (e.g., "wedding venue in Sydney, Australia")
-      // Don't add location again - it would duplicate it!
-      const queryContent = `${task.query}. Return 10-15 results with business name, city, country, and website if available.`
+      // Build query with trending focus and existing listings exclusion
+      let queryContent = `${task.query} that are RECENTLY TRENDING - mentioned in recent media coverage, news articles, social media, wedding blogs, or featured in recent weddings (last 12 months).`
+
+      if (existingNames.length > 0) {
+        queryContent += `\n\nEXCLUDE these existing vendors we already have: ${existingNames.slice(0, 50).join(', ')}`
+      }
+
+      queryContent += `\n\nReturn 10-15 NEW, TRENDING results with business name, city, country, and website if available.`
+
       console.log('🔍 Calling Perplexity API')
       console.log('   Query:', queryContent)
       console.log('   Cache key:', cacheKey)
       console.log('   Location:', task.location)
+      console.log('   Excluding:', existingNames.length, 'existing listings')
 
       // Call Perplexity API
       const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -102,7 +120,7 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a wedding service discovery assistant. Find 10-15 unique, high-quality wedding service providers based on the query. Include their name, location (city, country), and any available website URL.'
+              content: 'You are a wedding service discovery assistant specializing in finding TRENDING and RECENTLY POPULAR wedding service providers. Focus on venues/vendors that have been featured, mentioned, or trending in recent media, news, blogs, or social media in the last 12 months. Prioritize businesses with recent visibility and buzz. Exclude any vendors explicitly listed in the exclusion list. Include their name, location (city, country), and any available website URL.'
             },
             {
               role: 'user',
