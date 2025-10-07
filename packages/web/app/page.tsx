@@ -65,54 +65,54 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Get Inspired</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900 to-gray-700 rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                <div className="relative aspect-[4/3] bg-pink-50 rounded-lg overflow-hidden border border-pink-100">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-3">💒</div>
-                    <h3 className="text-xl font-bold mb-2">Real Weddings</h3>
-                    <p className="text-sm text-gray-200 text-center opacity-90">
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Real Weddings</h3>
+                    <p className="text-sm text-gray-600 text-center">
                       Browse real couple stories
                     </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                  <div className="absolute inset-0 bg-pink-100/0 group-hover:bg-pink-100/30 transition-colors"></div>
                 </div>
               </button>
 
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-600 rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                <div className="relative aspect-[4/3] bg-purple-50 rounded-lg overflow-hidden border border-purple-100">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-3">✨</div>
-                    <h3 className="text-xl font-bold mb-2">Style Guides</h3>
-                    <p className="text-sm text-gray-200 text-center opacity-90">
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Style Guides</h3>
+                    <p className="text-sm text-gray-600 text-center">
                       Explore wedding styles
                     </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                  <div className="absolute inset-0 bg-purple-100/0 group-hover:bg-purple-100/30 transition-colors"></div>
                 </div>
               </button>
 
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-700 to-gray-500 rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                <div className="relative aspect-[4/3] bg-blue-50 rounded-lg overflow-hidden border border-blue-100">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-3">📈</div>
-                    <h3 className="text-xl font-bold mb-2">Trending</h3>
-                    <p className="text-sm text-gray-200 text-center opacity-90">
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Trending</h3>
+                    <p className="text-sm text-gray-600 text-center">
                       What's hot this season
                     </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                  <div className="absolute inset-0 bg-blue-100/0 group-hover:bg-blue-100/30 transition-colors"></div>
                 </div>
               </button>
 
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-600 to-gray-400 rounded-lg overflow-hidden">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                <div className="relative aspect-[4/3] bg-green-50 rounded-lg overflow-hidden border border-green-100">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6">
                     <div className="text-6xl mb-3">🎨</div>
-                    <h3 className="text-xl font-bold mb-2">Ideas</h3>
-                    <p className="text-sm text-gray-200 text-center opacity-90">
+                    <h3 className="text-xl font-bold mb-2 text-gray-900">Ideas</h3>
+                    <p className="text-sm text-gray-600 text-center">
                       Colors, themes & more
                     </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                  <div className="absolute inset-0 bg-green-100/0 group-hover:bg-green-100/30 transition-colors"></div>
                 </div>
               </button>
             </div>
