@@ -170,7 +170,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Wedding Pros Grid */}
+        {/* Featured Wedding Professionals */}
         <VenueGrid filters={filters} />
       </main>
     </div>
