@@ -228,94 +228,237 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-    logger.info('Starting Instagram vendor sync')
+    logger.info('Starting Instagram vendor sync from listings')
 
-    // Get all active Instagram accounts
-    const { data: accounts, error: accountsError } = await supabase
-      .from('instagram_accounts')
-      .select('*')
-      .eq('sync_status', 'active')
-      .eq('has_access_token', true)
+    // Get all listings with Instagram handles
+    const { data: listings, error: listingsError } = await supabase
+      .from('listings')
+      .select('id, instagram_handle, city, country, category')
+      .not('instagram_handle', 'is', null)
+      .neq('instagram_handle', '')
+      .limit(50) // Process 50 at a time
 
-    if (accountsError) {
-      throw new Error(`Failed to fetch accounts: ${accountsError.message}`)
+    if (listingsError) {
+      throw new Error(`Failed to fetch listings: ${listingsError.message}`)
     }
 
-    if (!accounts || accounts.length === 0) {
-      logger.info('No active Instagram accounts to sync')
+    if (!listings || listings.length === 0) {
+      logger.info('No listings with Instagram handles found')
 
-      await discord.log('📸 Instagram Sync: No accounts', {
+      await discord.log('📸 Instagram Sync: No listings with handles', {
         color: 0xaaaaaa
       })
 
       return new Response(JSON.stringify({
         success: true,
         accounts_synced: 0,
-        message: 'No active accounts'
+        message: 'No listings with Instagram handles'
       }), {
         headers: { 'Content-Type': 'application/json' }
       })
     }
 
-    logger.info(`Found ${accounts.length} accounts to sync`)
+    logger.info(`Found ${listings.length} listings with Instagram handles`)
 
-    // Sync each account
-    const results: SyncResult[] = []
+    // Sync each listing's Instagram account
+    let accountsProcessed = 0
     let totalNewPosts = 0
     let totalErrors = 0
 
-    for (const account of accounts) {
-      // Get access token from vault (placeholder - implement proper token storage)
-      // For now, we'll skip accounts without tokens
-      const accessToken = 'PLACEHOLDER' // TODO: Implement secure token retrieval
+    for (const listing of listings) {
+      try {
+        const handle = listing.instagram_handle.replace('@', '').trim()
 
-      if (accessToken === 'PLACEHOLDER') {
-        logger.warn(`Skipping account @${account.username} - no access token`)
-        continue
+        // Check if instagram_account exists for this listing
+        const { data: existingAccount } = await supabase
+          .from('instagram_accounts')
+          .select('id, username, last_synced_at')
+          .eq('listing_id', listing.id)
+          .single()
+
+        // Skip if synced recently (within 24 hours)
+        if (existingAccount?.last_synced_at) {
+          const lastSynced = new Date(existingAccount.last_synced_at)
+          const hoursSinceSync = (Date.now() - lastSynced.getTime()) / (1000 * 60 * 60)
+          if (hoursSinceSync < 24) {
+            logger.info(`Skipping @${handle} - synced ${hoursSinceSync.toFixed(1)}h ago`)
+            continue
+          }
+        }
+
+        // Fetch account profile and posts using instagrapi
+        logger.info(`Fetching Instagram profile for @${handle}`)
+
+        const instagrapiResponse = await fetch(`${supabaseUrl}/functions/v1/instagrapi-scraper`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'get_user_posts',
+            username: handle,
+            limit: 25
+          })
+        })
+
+        if (!instagrapiResponse.ok) {
+          logger.warn(`Failed to fetch @${handle}: ${instagrapiResponse.status}`)
+          totalErrors++
+          continue
+        }
+
+        const instagrapiData = await instagrapiResponse.json()
+
+        if (!instagrapiData.success || !instagrapiData.user) {
+          logger.warn(`No data for @${handle}`)
+          totalErrors++
+          continue
+        }
+
+        const user = instagrapiData.user
+        const posts = instagrapiData.posts || []
+
+        // Create or update instagram_account
+        let accountId = existingAccount?.id
+
+        if (!accountId) {
+          const { data: newAccount, error: accountError } = await supabase
+            .from('instagram_accounts')
+            .insert({
+              listing_id: listing.id,
+              instagram_id: user.pk || handle,
+              username: handle,
+              full_name: user.full_name,
+              bio: user.biography,
+              profile_picture_url: user.profile_pic_url,
+              followers_count: user.follower_count || 0,
+              following_count: user.following_count || 0,
+              media_count: user.media_count || 0,
+              account_type: user.is_business ? 'business' : 'personal',
+              sync_status: 'active',
+              last_synced_at: new Date().toISOString()
+            })
+            .select('id')
+            .single()
+
+          if (accountError) {
+            logger.error(`Failed to create account for @${handle}: ${accountError.message}`)
+            totalErrors++
+            continue
+          }
+
+          accountId = newAccount.id
+          logger.info(`Created instagram_account for @${handle}`)
+        } else {
+          // Update existing account
+          await supabase
+            .from('instagram_accounts')
+            .update({
+              full_name: user.full_name,
+              bio: user.biography,
+              profile_picture_url: user.profile_pic_url,
+              followers_count: user.follower_count || 0,
+              following_count: user.following_count || 0,
+              media_count: user.media_count || 0,
+              sync_status: 'active',
+              last_synced_at: new Date().toISOString()
+            })
+            .eq('id', accountId)
+
+          logger.info(`Updated instagram_account for @${handle}`)
+        }
+
+        // Process posts
+        let newPostsCount = 0
+
+        for (const post of posts) {
+          try {
+            // Check if post exists
+            const { data: existingPost } = await supabase
+              .from('instagram_posts')
+              .select('id')
+              .eq('instagram_media_id', post.pk || post.id)
+              .single()
+
+            if (existingPost) {
+              // Update engagement metrics
+              await supabase
+                .from('instagram_posts')
+                .update({
+                  like_count: post.like_count || 0,
+                  comment_count: post.comment_count || 0
+                })
+                .eq('id', existingPost.id)
+              continue
+            }
+
+            // Extract metadata
+            const caption = post.caption_text || post.caption || ''
+            const hashtags = extractHashtags(caption)
+            const mentions = extractMentions(caption)
+            const wedding_related = isWeddingRelated(caption, hashtags)
+            const themes = detectThemes(caption, hashtags)
+
+            // Insert new post
+            const { error: insertError } = await supabase
+              .from('instagram_posts')
+              .insert({
+                instagram_media_id: post.pk || post.id,
+                instagram_account_id: accountId,
+                media_type: post.media_type === 1 ? 'IMAGE' : post.media_type === 2 ? 'VIDEO' : 'CAROUSEL_ALBUM',
+                media_url: post.thumbnail_url || post.image_versions2?.candidates?.[0]?.url,
+                thumbnail_url: post.thumbnail_url,
+                permalink: `https://www.instagram.com/p/${post.code}/`,
+                caption: caption,
+                posted_at: post.taken_at ? new Date(post.taken_at * 1000).toISOString() : new Date().toISOString(),
+                hashtags: hashtags,
+                mentions: mentions,
+                like_count: post.like_count || 0,
+                comment_count: post.comment_count || 0,
+                is_wedding_related: wedding_related,
+                detected_themes: themes,
+                city: listing.city,
+                country: listing.country,
+                discovered_via: 'vendor_sync',
+                processed: true,
+                processed_at: new Date().toISOString()
+              })
+
+            if (!insertError) {
+              newPostsCount++
+            } else {
+              logger.warn(`Failed to insert post for @${handle}: ${insertError.message}`)
+            }
+          } catch (postError: any) {
+            logger.warn(`Error processing post for @${handle}: ${postError.message}`)
+          }
+        }
+
+        accountsProcessed++
+        totalNewPosts += newPostsCount
+
+        logger.info(`Synced @${handle}: ${newPostsCount} new posts out of ${posts.length}`)
+
+        // Rate limiting: wait 2 seconds between accounts
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+      } catch (error: any) {
+        logger.error(`Error processing listing ${listing.id}: ${error.message}`)
+        totalErrors++
       }
-
-      const result = await syncInstagramAccount(
-        account.id,
-        account.username,
-        account.instagram_id,
-        accessToken,
-        supabase,
-        logger
-      )
-
-      results.push(result)
-      totalNewPosts += result.newPosts
-      totalErrors += result.errors.length
-
-      // Rate limiting: wait 1 second between accounts
-      await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
     const duration = Date.now() - startTime
-
-    // Log sync results
-    const { error: logError } = await supabase
-      .from('instagram_sync_logs')
-      .insert({
-        sync_type: 'vendor_sync',
-        accounts_synced: results.length,
-        posts_discovered: results.reduce((sum, r) => sum + r.totalPosts, 0),
-        new_posts: totalNewPosts,
-        errors_count: totalErrors,
-        duration_ms: duration,
-        metadata: { results }
-      })
-
-    if (logError) {
-      logger.warn('Failed to log sync results', { error: logError })
-    }
 
     // Discord notification
     await discord.log(`📸 Instagram Sync Complete`, {
       color: totalErrors > 0 ? 0xff9900 : 0x00ff00,
       metadata: {
-        'Accounts': results.length.toString(),
+        'Listings Processed': accountsProcessed.toString(),
         'New Posts': totalNewPosts.toString(),
         'Errors': totalErrors.toString(),
         'Duration': `${(duration / 1000).toFixed(1)}s`
@@ -323,7 +466,7 @@ Deno.serve(async (req) => {
     })
 
     logger.info('Instagram vendor sync completed', {
-      accounts: results.length,
+      accounts: accountsProcessed,
       newPosts: totalNewPosts,
       errors: totalErrors,
       duration
@@ -331,11 +474,10 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      accounts_synced: results.length,
+      accounts_synced: accountsProcessed,
       new_posts: totalNewPosts,
       total_errors: totalErrors,
-      duration_ms: duration,
-      results
+      duration_ms: duration
     }), {
       headers: { 'Content-Type': 'application/json' }
     })
