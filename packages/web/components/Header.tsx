@@ -64,17 +64,18 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
                 onClick={() => onCategoryChange?.(category.id)}
                 className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-base relative ${
                   activeCategory === category.id
-                    ? 'bg-black text-white'
-                    : 'text-gray-600 hover:bg-gray-50 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 p-[1px]'
+                    ? 'bg-black text-white border border-black'
+                    : 'text-gray-600 hover:bg-gray-50 bg-white border border-transparent'
                 }`}
+                style={
+                  activeCategory !== category.id
+                    ? {
+                        borderImage: 'linear-gradient(to right, rgb(147, 51, 234), rgb(236, 72, 153), rgb(251, 146, 60)) 1',
+                      }
+                    : undefined
+                }
               >
-                {activeCategory === category.id ? (
-                  category.label
-                ) : (
-                  <span className="block bg-white px-[19px] py-[7px] rounded-full">
-                    {category.label}
-                  </span>
-                )}
+                {category.label}
               </button>
             ))}
           </nav>
