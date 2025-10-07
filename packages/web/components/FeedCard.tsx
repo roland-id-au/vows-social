@@ -113,7 +113,7 @@ export default function FeedCard({ item, type, index = 0 }: FeedCardProps) {
     <Link href={`/venues/${permalink}`} className="group block">
       <div className="bg-white rounded-lg overflow-hidden hover:shadow-xl transition-all duration-300">
         {/* Image */}
-        <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
+        <div className="relative aspect-[4/5] overflow-hidden bg-gray-100">
           {images.length > 0 ? (
             <Image
               src={mainImage}

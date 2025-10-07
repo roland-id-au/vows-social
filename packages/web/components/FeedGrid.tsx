@@ -83,10 +83,10 @@ export default function FeedGrid({ filters }: FeedGridProps) {
 
   if (initialLoad && feedItems.length === 0) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="animate-pulse">
-            <div className="bg-gray-200 aspect-[4/3] rounded-lg mb-3"></div>
+            <div className="bg-gray-200 aspect-[3/4] rounded-lg mb-3"></div>
             <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-gray-200 rounded w-1/2"></div>
           </div>
@@ -106,7 +106,7 @@ export default function FeedGrid({ filters }: FeedGridProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {feedItems.map((feedItem, index) => (
           <FeedCard
             key={feedItem.type === 'listing' ? (feedItem.item as Venue).id : (feedItem.item as InstagramPost).id + '-' + index}
