@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Venue } from '@/lib/types';
+import { Venue, InstagramPost } from '@/lib/types';
 import { formatPriceRange } from '@/lib/supabase-service';
 import HeroGallery from '@/components/HeroGallery';
 import StickyVenueHeader from '@/components/StickyVenueHeader';
 import ImageLightbox from '@/components/ImageLightbox';
+import InstagramCarousel from '@/components/InstagramCarousel';
 import { MapPinIcon, UsersIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface VenueDetailClientProps {
@@ -36,6 +37,22 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
     }
   };
 
+  // TODO: Get Instagram posts that TAG/MENTION this venue (from other users)
+  // Currently showing venue's own posts as placeholder
+  // Need to implement: query instagram_posts where mentions contains venue handle
+  // or where detected_vendors contains venue name
+  const instagramPosts: InstagramPost[] = venue.instagram_accounts
+    ?.flatMap(account =>
+      (account.instagram_posts || [])
+        .filter(post => post.discovered_via !== 'vendor_sync') // Only show discovered posts, not vendor's own
+        .map(post => ({
+          ...post,
+          instagram_account_username: account.username
+        }))
+    )
+    .sort((a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime())
+    .slice(0, 9) || [];
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sticky Header (hidden initially, appears on scroll) */}
@@ -56,6 +73,11 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         reviewCount={venue.review_count}
         onViewAll={() => openLightbox(0)}
       />
+
+      {/* Instagram Posts Carousel */}
+      {instagramPosts.length > 0 && (
+        <InstagramCarousel posts={instagramPosts} />
+      )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">

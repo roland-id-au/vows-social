@@ -88,6 +88,7 @@ export interface InstagramPost {
   id: string;
   instagram_media_id: string;
   instagram_account_id: string;
+  instagram_account_username?: string; // Added for display purposes
   media_type: string;
   media_url?: string;
   thumbnail_url?: string;

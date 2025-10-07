@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Yeseva_One } from 'next/font/google';
 
@@ -23,19 +24,38 @@ interface HeaderProps {
 }
 
 export default function Header({ activeCategory, onCategoryChange }: HeaderProps) {
+  const [showLogo, setShowLogo] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Show logo after scrolling 50px
+      setShowLogo(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3">
-          {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
-            <h1 className={`${yeseva.className} text-2xl text-gray-900`}>
-              The Vows Social
-            </h1>
-          </Link>
-
-          {/* Category Navigation */}
+        <div className="flex justify-center items-center py-3">
+          {/* Category Navigation with Logo */}
           <nav className="flex items-center gap-2">
+            {/* Logo - grouped with badges */}
+            <Link
+              href="/"
+              className={`flex-shrink-0 transition-all duration-300 ${
+                showLogo ? 'opacity-100 w-auto mr-2' : 'opacity-0 w-0 overflow-hidden'
+              }`}
+            >
+              <h1 className={`${yeseva.className} text-sm text-gray-900 whitespace-nowrap`}>
+                The Vows Social
+              </h1>
+            </Link>
+
+            {showLogo && <div className="w-px h-4 bg-gray-300" />}
+
             {categories.map((category) => (
               <button
                 key={category.id || 'all'}
