@@ -14,24 +14,9 @@ export default function Header() {
             <h1 className={`text-xl font-bold text-gray-900 ${yeseva.className}`}>The Vows Social</h1>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-1">
-            <Link href="/" className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              Vendors
-            </Link>
-            <Link href="/inspiration" className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              Inspiration
-            </Link>
-            <Link href="/planning" className="text-gray-600 hover:text-gray-900 font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm">
-              Planning
-            </Link>
-          </nav>
-
           <div className="flex items-center space-x-3">
-            <button className="hidden sm:block text-gray-700 hover:text-gray-900 font-semibold px-4 py-2 text-sm">
-              Sign In
-            </button>
-            <button className="bg-primary-600 text-white px-5 py-2.5 rounded-lg hover:bg-primary-700 transition-all font-semibold text-sm shadow-sm hover:shadow-md">
-              For Vendors
+            <button className="bg-black text-white px-6 py-2.5 rounded-full hover:bg-gray-800 transition-all font-semibold text-sm">
+              For Pros
             </button>
           </div>
         </div>

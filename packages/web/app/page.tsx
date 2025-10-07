@@ -46,17 +46,15 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
-
-      {/* Hero Section - Knot-style */}
+      {/* Hero Section */}
       <div className="relative bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
-          <div className="text-center mb-8">
-            <h1 className={`text-3xl md:text-4xl text-gray-900 mb-3 ${yeseva.className}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
+          <div className="text-center mb-10">
+            <h1 className={`text-5xl md:text-6xl lg:text-7xl text-gray-900 mb-4 ${yeseva.className}`}>
               The Vows Social
             </h1>
-            <p className="text-base md:text-lg text-gray-600">
-              Find vendors you'll love
+            <p className="text-lg md:text-xl text-gray-600">
+              Where your wedding vision comes alive
             </p>
           </div>
 
@@ -98,22 +96,22 @@ export default function Home() {
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-1">
                 {filters.location
-                  ? `${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Vendors' : 'Vendors'} in ${filters.location}`
+                  ? `${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Wedding Pros' : 'Wedding Pros'} in ${filters.location}`
                   : activeCategory
-                    ? VenueCategoryDisplay[activeCategory] || 'Vendors'
-                    : 'Discover Wedding Vendors'
+                    ? VenueCategoryDisplay[activeCategory] || 'Wedding Pros'
+                    : 'Discover Your Dream Team'
                 }
               </h2>
               <p className="text-sm text-gray-600">
                 {filters.location
-                  ? 'Local wedding professionals near you'
-                  : 'Top-rated vendors and new additions'}
+                  ? 'Trusted wedding professionals near you'
+                  : 'Top-rated pros and fresh finds'}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Vendors Grid */}
+        {/* Wedding Pros Grid */}
         <VenueGrid filters={filters} />
 
         {/* Inspiration Section */}
