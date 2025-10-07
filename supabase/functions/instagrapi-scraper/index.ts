@@ -25,11 +25,82 @@ interface InstagramPost {
 // Singleton Instagram client
 let ig: IgApiClient | null = null
 let isLoggedIn = false
+let pendingChallenge: any = null
+
+// Load session from Supabase Storage
+async function loadSession(): Promise<any | null> {
+  try {
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const { data, error } = await supabase.storage
+      .from('instagram-sessions')
+      .download('session.json')
+
+    if (error || !data) {
+      console.log('No existing session found')
+      return null
+    }
+
+    const text = await data.text()
+    const session = JSON.parse(text)
+    console.log('Loaded existing Instagram session from storage')
+    return session
+  } catch (error) {
+    console.error('Failed to load session:', error)
+    return null
+  }
+}
+
+// Save session to Supabase Storage
+async function saveSession(session: any): Promise<void> {
+  try {
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const sessionJson = JSON.stringify(session)
+
+    const { error } = await supabase.storage
+      .from('instagram-sessions')
+      .upload('session.json', new Blob([sessionJson]), {
+        upsert: true,
+        contentType: 'application/json'
+      })
+
+    if (error) {
+      console.error('Failed to save session:', error)
+    } else {
+      console.log('Instagram session saved to storage')
+    }
+  } catch (error) {
+    console.error('Failed to save session:', error)
+  }
+}
 
 async function getInstagramClient() {
   if (!ig) {
     ig = new IgApiClient()
     ig.state.generateDevice(Deno.env.get('INSTAGRAM_USERNAME') || 'the_vows_social')
+
+    // Try to restore session from storage
+    const savedSession = await loadSession()
+    if (savedSession) {
+      try {
+        await ig.state.deserialize(savedSession)
+        isLoggedIn = true
+        console.log('Instagram session restored from storage')
+        return ig
+      } catch (error) {
+        console.error('Failed to restore session, will re-login:', error)
+        isLoggedIn = false
+      }
+    }
   }
 
   // Login if not already logged in
@@ -47,6 +118,11 @@ async function getInstagramClient() {
 
         isLoggedIn = true
         console.log('Logged in to Instagram via Facebook')
+
+        // Save session to storage
+        const session = await ig.state.serialize()
+        await saveSession(session)
+
         return ig
       } catch (fbError) {
         console.error('Facebook login failed:', fbError)
@@ -67,27 +143,45 @@ async function getInstagramClient() {
       await ig.account.login(username, password)
       isLoggedIn = true
       console.log(`Logged in to Instagram as @${username}`)
+
+      // Save session to storage
+      const session = await ig.state.serialize()
+      await saveSession(session)
     } catch (error: any) {
       // Handle challenge_required error
       if (error.name === 'IgChallengeRequiredError') {
-        console.log('Challenge required - attempting auto-solve...')
+        console.log('Challenge required - storing challenge state...')
+
+        // Store challenge state for later code submission
+        pendingChallenge = error
 
         try {
-          // Automatically resolve challenge if possible
-          await ig.challenge.auto(true) // true = reset existing challenge
-          console.log('Challenge auto-solved successfully')
-          isLoggedIn = true
-          return ig
-        } catch (challengeError: any) {
-          console.error('Challenge auto-solve failed:', challengeError)
+          // Try to send challenge via email/SMS
+          await ig.challenge.selectVerifyMethod('1') // '0' for SMS, '1' for email
+          console.log('Challenge verification sent via email to the account email')
 
-          // Return detailed challenge info for manual resolution
           throw new Error(JSON.stringify({
-            type: 'challenge_required',
-            message: 'Instagram challenge required - check logs for details',
-            challengeUrl: error.checkpoint_url || error.challenge_url,
-            hint: 'Login manually to Instagram and complete the challenge, then retry'
+            type: 'challenge_sent',
+            message: 'Challenge code sent to email. Check sugar@vows.social for verification code.',
+            method: 'email'
           }))
+        } catch (challengeError: any) {
+          console.error('Challenge send failed:', challengeError)
+
+          // Fallback: try auto-solve
+          try {
+            await ig.challenge.auto(true)
+            console.log('Challenge auto-solved successfully')
+            isLoggedIn = true
+            pendingChallenge = null
+            return ig
+          } catch (autoError) {
+            throw new Error(JSON.stringify({
+              type: 'challenge_required',
+              message: 'Instagram challenge required - check sugar@vows.social for code',
+              challengeUrl: error.checkpoint_url || error.challenge_url
+            }))
+          }
         }
       }
 
@@ -225,6 +319,38 @@ async function discoverByHashtag(hashtag: string, limit: number = 20) {
   }
 }
 
+async function submitChallengeCode(code: string) {
+  try {
+    if (!ig) {
+      throw new Error('Instagram client not initialized')
+    }
+
+    if (!pendingChallenge) {
+      throw new Error('No pending challenge to submit code for')
+    }
+
+    console.log('Submitting challenge code to Instagram...')
+
+    // Submit the security code
+    await ig.challenge.sendSecurityCode(code)
+
+    console.log('Challenge code accepted - login successful')
+
+    // Clear pending challenge and mark as logged in
+    pendingChallenge = null
+    isLoggedIn = true
+
+    // Save session to storage
+    const session = await ig.state.serialize()
+    await saveSession(session)
+
+    return { success: true, message: 'Challenge completed, logged in successfully' }
+  } catch (error: any) {
+    console.error('Challenge code submission failed:', error)
+    throw error
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -342,11 +468,44 @@ serve(async (req) => {
       }
     }
 
+    // Submit challenge code
+    if (action === 'submit_challenge') {
+      try {
+        const code = body.code
+
+        if (!code) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Challenge code is required' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        const result = await submitChallengeCode(code)
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            ...result
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+
+      } catch (error: any) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: `Challenge submission failed: ${error.message}`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        )
+      }
+    }
+
     // Unknown action
     return new Response(
       JSON.stringify({
         success: false,
-        error: `Unknown action: ${action}. Supported: monitor_user, follow_user, get_following, discover_hashtag`
+        error: `Unknown action: ${action}. Supported: monitor_user, follow_user, get_following, discover_hashtag, submit_challenge`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
