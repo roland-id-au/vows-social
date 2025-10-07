@@ -47,15 +47,15 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="max-w-[1920px] mx-auto">
           <div className="grid grid-cols-[minmax(200px,1fr)_auto_minmax(200px,1fr)] items-center h-20 gap-8">
-            {/* Left: Logo */}
+            {/* Left: Logo - only show when scrolled */}
             <div className="flex items-center min-w-0 justify-start">
-              <Link href="/" className="flex-shrink-0">
-                <span className={`text-2xl md:text-3xl font-bold transition-colors ${
-                  isScrolled ? 'text-white' : 'text-gray-900'
-                } ${yeseva.className}`}>
-                  The Vows Social
-                </span>
-              </Link>
+              {isScrolled && (
+                <Link href="/" className="flex-shrink-0">
+                  <span className={`text-2xl md:text-3xl font-bold text-white ${yeseva.className}`}>
+                    The Vows Social
+                  </span>
+                </Link>
+              )}
             </div>
 
             {/* Center: Category Navigation */}

@@ -239,43 +239,79 @@ async function getInstagramClient() {
             }
           })
 
-          // Wait for challenge to be resolved via email webhook (120 second timeout)
+          // Wait for challenge code from email webhook (120 second timeout)
           console.log('Waiting for challenge code from email webhook...')
           const startTime = Date.now()
           const timeout = 120000 // 120 seconds
 
           while (Date.now() - startTime < timeout) {
-            // Poll database for challenge completion
-            const { data: challengeState } = await supabase
-              .from('instagram_challenge_state')
-              .select('status, completed_at, error_message')
-              .eq('username', username)
+            // Poll database for extracted challenge code
+            const { data: challengeEmail } = await supabase
+              .from('instagram_challenge_emails')
+              .select('challenge_code, status, error_message')
+              .eq('to_email', 'sugar@vows.social')
+              .order('created_at', { ascending: false })
+              .limit(1)
               .single()
 
-            if (challengeState?.status === 'completed') {
-              console.log('Challenge resolved successfully via email webhook!')
-              isLoggedIn = true
-              pendingChallenge = null
+            if (challengeEmail?.challenge_code) {
+              console.log('Challenge code received:', challengeEmail.challenge_code)
 
-              await discord.log('✅ Challenge Auto-Resolved', {
-                color: 0x00ff00,
+              await discord.log('🔑 Challenge Code Received', {
+                color: 0x0099ff,
                 metadata: {
-                  'Method': 'Email webhook',
-                  'Duration': `${Math.round((Date.now() - startTime) / 1000)}s`
+                  'Code': `**${challengeEmail.challenge_code}**`,
+                  'Action': 'Submitting with active client...'
                 }
               })
 
-              // Reload the authenticated session
-              const authedSession = await loadSession()
-              if (authedSession) {
-                await ig.state.deserialize(authedSession)
-              }
+              // Submit the code using the active Instagram client
+              try {
+                await ig.challenge.sendSecurityCode(challengeEmail.challenge_code)
+                console.log('Challenge code submitted successfully!')
+                isLoggedIn = true
+                pendingChallenge = null
 
-              return ig
+                // Update database status
+                await supabase
+                  .from('instagram_challenge_state')
+                  .update({
+                    status: 'completed',
+                    completed_at: new Date().toISOString()
+                  })
+                  .eq('username', username)
+
+                await discord.log('✅ Challenge Auto-Resolved', {
+                  color: 0x00ff00,
+                  metadata: {
+                    'Method': 'Email webhook + Active client',
+                    'Duration': `${Math.round((Date.now() - startTime) / 1000)}s`
+                  }
+                })
+
+                // Save authenticated session
+                const authedSession = await ig.state.serialize()
+                await saveSession(authedSession)
+
+                return ig
+              } catch (submitError: any) {
+                console.error('Challenge code submission failed:', submitError)
+
+                await discord.log('❌ Challenge Code Submission Failed', {
+                  color: 0xff0000,
+                  metadata: {
+                    'Code': challengeEmail.challenge_code,
+                    'Error': submitError.message || 'Unknown error'
+                  }
+                })
+
+                throw new Error(`Challenge code submission failed: ${submitError.message}`)
+              }
             }
 
-            if (challengeState?.status === 'failed') {
-              throw new Error(`Challenge failed: ${challengeState.error_message || 'Unknown error'}`)
+            // Check for errors from webhook
+            if (challengeEmail?.status === 'failed') {
+              throw new Error(`Challenge email processing failed: ${challengeEmail.error_message || 'Unknown error'}`)
             }
 
             // Not completed yet, wait and try again

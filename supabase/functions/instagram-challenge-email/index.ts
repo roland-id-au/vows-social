@@ -123,8 +123,18 @@ Deno.serve(async (req) => {
 
     logger.info('Challenge code extracted', { code: challengeCode, type: challengeType })
 
+    await discord.log('🔑 Instagram Challenge Code Extracted', {
+      color: 0x00ff00,
+      metadata: {
+        'Code': `**${challengeCode}**`,
+        'Type': challengeType,
+        'From': email.from,
+        'Action': 'Stored in DB - active client will submit'
+      }
+    })
+
     // Store email with extracted code
-    const { data: storedEmail, error: insertError } = await supabase
+    const { error: insertError } = await supabase
       .from('instagram_challenge_emails')
       .insert({
         from_email: email.from,
@@ -138,92 +148,22 @@ Deno.serve(async (req) => {
         status: 'extracted',
         raw_email_data: email
       })
-      .select()
-      .single()
 
     if (insertError) {
       throw new Error(`Failed to store email: ${insertError.message}`)
     }
 
-    // Submit challenge code to Instagram API
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    logger.info('Challenge code stored in database - waiting for active client to submit')
 
-    logger.info('Submitting challenge code to Instagram API')
-
-    const igResponse = await fetch(`${supabaseUrl}/functions/v1/instagram-api`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        action: 'submit_challenge',
-        code: challengeCode
-      })
-    })
-
-    const igResult = await igResponse.json()
-
-    if (igResult.success) {
-      // Update status to submitted
-      await supabase
-        .from('instagram_challenge_emails')
-        .update({
-          status: 'submitted',
-          submitted_at: new Date().toISOString()
-        })
-        .eq('id', storedEmail.id)
-
-      await discord.log('✅ Instagram Challenge Resolved', {
-        color: 0x00ff00,
-        metadata: {
-          'Code': challengeCode,
-          'Type': challengeType,
-          'Status': 'Submitted successfully'
-        }
-      })
-
-      logger.info('Challenge code submitted successfully')
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          code: challengeCode,
-          type: challengeType,
-          submitted: true
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } else {
-      // Update status to failed
-      await supabase
-        .from('instagram_challenge_emails')
-        .update({
-          status: 'failed',
-          error_message: igResult.error || 'Unknown error'
-        })
-        .eq('id', storedEmail.id)
-
-      await discord.log('❌ Instagram Challenge Submission Failed', {
-        color: 0xff0000,
-        metadata: {
-          'Code': challengeCode,
-          'Error': igResult.error || 'Unknown error'
-        }
-      })
-
-      logger.error('Challenge submission failed', { error: igResult.error })
-
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: igResult.error,
-          code: challengeCode
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      )
-    }
+    return new Response(
+      JSON.stringify({
+        success: true,
+        code: challengeCode,
+        type: challengeType,
+        stored: true
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error: any) {
     logger.error('Challenge email processing failed', { error: error.message })
