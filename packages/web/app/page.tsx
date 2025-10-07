@@ -9,18 +9,6 @@ import { Yeseva_One } from 'next/font/google';
 
 const yeseva = Yeseva_One({ weight: '400', subsets: ['latin'] });
 
-const categories = [
-  { id: null, label: 'All' },
-  { id: 'venue', label: 'Venues' },
-  { id: 'caterer', label: 'Catering' },
-  { id: 'photographer', label: 'Photography' },
-  { id: 'florist', label: 'Florals' },
-  { id: 'videographer', label: 'Videography' },
-  { id: 'musician', label: 'Music' },
-  { id: 'stylist', label: 'Styling' },
-  { id: 'planner', label: 'Planning' },
-];
-
 export default function Home() {
   const [filters, setFilters] = useState<SearchFilters>({});
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -46,6 +34,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Header activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
+
       {/* Hero Section */}
       <div className="relative bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
@@ -90,31 +80,21 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Section Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                {filters.location
-                  ? `${activeCategory ? VenueCategoryDisplay[activeCategory] || 'Wedding Pros' : 'Wedding Pros'} in ${filters.location}`
-                  : activeCategory
-                    ? VenueCategoryDisplay[activeCategory] || 'Wedding Pros'
-                    : 'Discover Your Dream Team'
-                }
-              </h2>
-              <p className="text-sm text-gray-600">
-                {filters.location
-                  ? 'Trusted wedding professionals near you'
-                  : 'Top-rated pros and fresh finds'}
-              </p>
+        {/* Row 1: Trending (first 4 items from all categories) */}
+        {!filters.location && !activeCategory && (
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Trending Now</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+              {/* This will show first 4 trending items - VenueGrid component will handle this */}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Inspiration Cards - Inline with Pros Grid */}
+        {/* Row 2: Inspiration Cards */}
         {!filters.location && !activeCategory && (
-          <div className="mb-12">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="mb-8">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Get Inspired</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
               <button className="group text-left">
                 <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900 to-gray-700 rounded-lg overflow-hidden">
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
@@ -170,7 +150,12 @@ export default function Home() {
           </div>
         )}
 
-        {/* Featured Wedding Professionals */}
+        {/* Row 3+: Featured Wedding Professionals */}
+        {!filters.location && !activeCategory && (
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Featured</h2>
+          </div>
+        )}
         <VenueGrid filters={filters} />
       </main>
     </div>
