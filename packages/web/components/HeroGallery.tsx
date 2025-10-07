@@ -79,7 +79,7 @@ export default function HeroGallery({
               src={image}
               alt={`${title} - Image ${index + 1}`}
               fill
-              className="object-cover"
+              className="object-cover object-top"
               quality={90}
               priority={index === 0}
               sizes="100vw"

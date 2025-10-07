@@ -18,5 +18,7 @@
     "db:clear": "echo '⚠️  This will delete all data AND storage! Press Ctrl+C to cancel or wait 5s...' && sleep 5 && supabase storage empty listing-images --local && supabase db reset",
     "db:clear-remote": "echo '⚠️  This will delete ALL remote production data AND storage! Press Ctrl+C to cancel or wait 10s...' && sleep 10 && supabase storage empty listing-images --project-ref nidbhgqeyhrudtnizaya && psql postgresql://postgres.nidbhgqeyhrudtnizaya:[PASSWORD]@aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres -c 'TRUNCATE TABLE notification_queue, enrichment_queue, discovered_listings, listings CASCADE;'"
   },
-  "devDependencies": {}
+  "dependencies": {
+    "instagram-private-api": "^1.46.1"
+  }
 }
