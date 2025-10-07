@@ -26,13 +26,9 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-3">
-          <Link href="/" className="flex items-center">
-            <h1 className={`text-xl font-bold text-gray-900 ${yeseva.className}`}>The Vows Social</h1>
-          </Link>
-
+        <div className="flex justify-center items-center py-3">
           {/* Category Navigation */}
-          <nav className="hidden md:flex items-center gap-2 mx-8">
+          <nav className="flex items-center gap-2">
             {categories.map((category) => (
               <button
                 key={category.id || 'all'}
@@ -47,12 +43,6 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
               </button>
             ))}
           </nav>
-
-          <div className="flex items-center space-x-3">
-            <button className="bg-black text-white px-6 py-2.5 rounded-full hover:bg-gray-800 transition-all font-semibold text-sm">
-              For Pros
-            </button>
-          </div>
         </div>
       </div>
     </header>

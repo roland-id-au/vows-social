@@ -43,16 +43,6 @@ export default function Home() {
             <h1 className={`text-5xl md:text-6xl lg:text-7xl text-gray-900 mb-4 ${yeseva.className}`}>
               The Vows Social
             </h1>
-            <p className="text-lg md:text-xl text-gray-600">
-              Where your wedding vision comes alive
-            </p>
-          </div>
-
-          <div className="max-w-2xl mx-auto mb-6">
-            <SearchBar
-              onSearch={handleSearch}
-              placeholder="Search by location..."
-            />
           </div>
         </div>
       </div>
