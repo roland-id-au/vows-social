@@ -62,13 +62,19 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
               <button
                 key={category.id || 'all'}
                 onClick={() => onCategoryChange?.(category.id)}
-                className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-base ${
+                className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-base relative ${
                   activeCategory === category.id
                     ? 'bg-black text-white'
-                    : 'text-gray-600 hover:bg-gray-100'
+                    : 'text-gray-600 hover:bg-gray-50 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 p-[1px]'
                 }`}
               >
-                {category.label}
+                {activeCategory === category.id ? (
+                  category.label
+                ) : (
+                  <span className="block bg-white px-[19px] py-[7px] rounded-full">
+                    {category.label}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
