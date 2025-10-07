@@ -149,7 +149,7 @@ export default function FeedCard({ item, type, index = 0 }: FeedCardProps) {
 
           {/* Content overlaid on image */}
           <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-            <h3 className="font-bold text-2xl mb-2 line-clamp-2 drop-shadow-lg">
+            <h3 className="font-bold text-2xl mb-2 line-clamp-1 drop-shadow-lg">
               {listing.short_name || listing.title}
             </h3>
 
