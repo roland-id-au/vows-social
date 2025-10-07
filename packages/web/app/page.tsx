@@ -57,27 +57,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="bg-white border-y border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide gap-2 py-3">
-            {categories.map((category) => (
-              <button
-                key={category.id || 'all'}
-                onClick={() => handleCategoryChange(category.id)}
-                className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all border ${
-                  activeCategory === category.id
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
-                }`}
-              >
-                <span className="text-sm">{category.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Row 1: Trending (first 4 items from all categories) */}
