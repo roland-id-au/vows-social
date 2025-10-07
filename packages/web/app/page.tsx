@@ -10,15 +10,15 @@ import { Yeseva_One } from 'next/font/google';
 const yeseva = Yeseva_One({ weight: '400', subsets: ['latin'] });
 
 const categories = [
-  { id: null, label: 'All', icon: '✨' },
-  { id: 'venue', label: 'Venues', icon: '🏛️' },
-  { id: 'caterer', label: 'Catering', icon: '🍽️' },
-  { id: 'photographer', label: 'Photography', icon: '📸' },
-  { id: 'florist', label: 'Florals', icon: '💐' },
-  { id: 'videographer', label: 'Videography', icon: '🎥' },
-  { id: 'musician', label: 'Music', icon: '🎵' },
-  { id: 'stylist', label: 'Styling', icon: '✨' },
-  { id: 'planner', label: 'Planning', icon: '📋' },
+  { id: null, label: 'All' },
+  { id: 'venue', label: 'Venues' },
+  { id: 'caterer', label: 'Catering' },
+  { id: 'photographer', label: 'Photography' },
+  { id: 'florist', label: 'Florals' },
+  { id: 'videographer', label: 'Videography' },
+  { id: 'musician', label: 'Music' },
+  { id: 'stylist', label: 'Styling' },
+  { id: 'planner', label: 'Planning' },
 ];
 
 export default function Home() {
@@ -77,13 +77,12 @@ export default function Home() {
               <button
                 key={category.id || 'all'}
                 onClick={() => handleCategoryChange(category.id)}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium whitespace-nowrap transition-all ${
+                className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all border ${
                   activeCategory === category.id
-                    ? 'bg-gray-900 text-white'
-                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
                 }`}
               >
-                <span className="text-lg">{category.icon}</span>
                 <span className="text-sm">{category.label}</span>
               </button>
             ))}
