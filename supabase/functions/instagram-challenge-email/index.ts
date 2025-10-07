@@ -76,6 +76,15 @@ Deno.serve(async (req) => {
       subject: email.subject
     })
 
+    await discord.log('📬 Instagram Challenge Email Received', {
+      color: 0x0099ff,
+      metadata: {
+        'From': email.from,
+        'Subject': email.subject,
+        'To': email.to
+      }
+    })
+
     // Extract challenge code
     const challengeCode = extractChallengeCode(email.text || '', email.html)
     const challengeType = getChallengeType(email.subject, email.text || '')

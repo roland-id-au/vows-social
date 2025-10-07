@@ -2,10 +2,6 @@ name = "vows-social-email-worker"
 main = "email-worker.js"
 compatibility_date = "2024-01-01"
 
-# Email routing configuration
-[email]
-# This worker will handle emails sent to sugar@vows.social
-
 # Environment variables
 [vars]
 SUPABASE_URL = "https://nidbhgqeyhrudtnizaya.supabase.co"

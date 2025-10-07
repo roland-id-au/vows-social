@@ -37,7 +37,7 @@ export default function Home() {
       <Header activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
 
       {/* Hero Section */}
-      <div className="relative bg-white">
+      <div className="relative bg-white pt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           <div className="text-center mb-4">
             <h1 className={`text-5xl md:text-6xl lg:text-7xl text-gray-900 mb-4 ${yeseva.className}`}>

@@ -5,11 +5,18 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { IgApiClient } from 'npm:instagram-private-api@^1.45.4'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { DiscordLogger } from '../_shared/discord-logger.ts'
+
+// Delay utility
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const discord = new DiscordLogger()
 
 interface InstagramPost {
   id: string
@@ -30,7 +37,6 @@ let pendingChallenge: any = null
 // Load session from Supabase Storage
 async function loadSession(): Promise<any | null> {
   try {
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2')
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -48,6 +54,15 @@ async function loadSession(): Promise<any | null> {
     const text = await data.text()
     const session = JSON.parse(text)
     console.log('Loaded existing Instagram session from storage')
+
+    await discord.log('📥 Instagram Session Restored', {
+      color: 0x0099ff,
+      metadata: {
+        'Source': 'Supabase Storage',
+        'Status': 'Session loaded successfully'
+      }
+    })
+
     return session
   } catch (error) {
     console.error('Failed to load session:', error)
@@ -75,18 +90,47 @@ async function saveSession(session: any): Promise<void> {
 
     if (error) {
       console.error('Failed to save session:', error)
+
+      await discord.log('⚠️ Session Save Failed', {
+        color: 0xff9900,
+        metadata: {
+          'Error': error.message || 'Unknown error',
+          'Storage': 'Supabase Storage'
+        }
+      })
     } else {
       console.log('Instagram session saved to storage')
+
+      await discord.log('💾 Instagram Session Saved', {
+        color: 0x0099ff,
+        metadata: {
+          'Storage': 'Supabase Storage',
+          'Status': 'Session persisted successfully'
+        }
+      })
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to save session:', error)
+
+    await discord.log('❌ Session Save Error', {
+      color: 0xff0000,
+      metadata: {
+        'Error': error.message || 'Unknown error',
+        'Storage': 'Supabase Storage'
+      }
+    })
   }
 }
 
 async function getInstagramClient() {
   if (!ig) {
+    const username = Deno.env.get('INSTAGRAM_USERNAME')
+    if (!username) {
+      throw new Error('INSTAGRAM_USERNAME environment variable not set')
+    }
+
     ig = new IgApiClient()
-    ig.state.generateDevice(Deno.env.get('INSTAGRAM_USERNAME') || 'the_vows_social')
+    ig.state.generateDevice(username)
 
     // Try to restore session from storage
     const savedSession = await loadSession()
@@ -105,52 +149,60 @@ async function getInstagramClient() {
 
   // Login if not already logged in
   if (!isLoggedIn) {
-    // Try Facebook login first (for accounts linked to Facebook)
-    const fbPhone = Deno.env.get('INSTAGRAM_FB_PHONE')
-    const fbPassword = Deno.env.get('INSTAGRAM_FB_PASSWORD')
-
-    if (fbPhone && fbPassword) {
-      try {
-        console.log('Attempting Facebook login for Instagram...')
-
-        // Facebook login flow
-        await ig.account.loginWithFacebook(fbPhone, fbPassword)
-
-        isLoggedIn = true
-        console.log('Logged in to Instagram via Facebook')
-
-        // Save session to storage
-        const session = await ig.state.serialize()
-        await saveSession(session)
-
-        return ig
-      } catch (fbError) {
-        console.error('Facebook login failed:', fbError)
-        // Fall through to regular Instagram login
-      }
-    }
-
-    // Fallback to regular Instagram login
+    // Direct Instagram login
     const username = Deno.env.get('INSTAGRAM_USERNAME')
     const password = Deno.env.get('INSTAGRAM_PASSWORD')
 
     if (!username || !password) {
-      throw new Error('Neither Facebook nor Instagram credentials configured')
+      throw new Error('Instagram credentials not configured')
     }
 
     try {
       console.log(`Attempting Instagram login as @${username}...`)
+
+      await discord.log('🔄 Instagram Login Attempt', {
+        color: 0xffaa00,
+        metadata: {
+          'Method': 'Direct',
+          'Username': `@${username}`,
+          'Status': 'Attempting login...'
+        }
+      })
+
       await ig.account.login(username, password)
       isLoggedIn = true
       console.log(`Logged in to Instagram as @${username}`)
+
+      await discord.log('✅ Instagram Login Success', {
+        color: 0x00ff00,
+        metadata: {
+          'Method': 'Direct',
+          'Username': `@${username}`,
+          'Status': 'Logged in successfully'
+        }
+      })
 
       // Save session to storage
       const session = await ig.state.serialize()
       await saveSession(session)
     } catch (error: any) {
       // Handle challenge_required error
-      if (error.name === 'IgChallengeRequiredError') {
+      const isChallengeError =
+        error.name === 'IgChallengeRequiredError' ||
+        error.message?.includes('challenge_required') ||
+        error.message?.includes('challenge required')
+
+      if (isChallengeError) {
         console.log('Challenge required - storing challenge state...')
+
+        await discord.log('🔒 Instagram Challenge Required', {
+          color: 0xff6600,
+          metadata: {
+            'Username': `@${username}`,
+            'Type': 'Security Challenge',
+            'Action': 'Requesting email verification'
+          }
+        })
 
         // Store challenge state for later code submission
         pendingChallenge = error
@@ -160,13 +212,100 @@ async function getInstagramClient() {
           await ig.challenge.selectVerifyMethod('1') // '0' for SMS, '1' for email
           console.log('Challenge verification sent via email to the account email')
 
+          // Save the challenge session state so it can be restored later
+          const challengeSession = await ig.state.serialize()
+          await saveSession(challengeSession)
+
+          // Create challenge state record in database
+          const supabase = createClient(
+            Deno.env.get('SUPABASE_URL')!,
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+          )
+
+          await supabase
+            .from('instagram_challenge_state')
+            .upsert({
+              username,
+              status: 'pending',
+              created_at: new Date().toISOString()
+            }, { onConflict: 'username' })
+
+          await discord.log('📧 Challenge Email Sent', {
+            color: 0x0099ff,
+            metadata: {
+              'Destination': 'sugar@vows.social',
+              'Type': 'Email Verification',
+              'Next Step': 'Awaiting code from Instagram (120s timeout)'
+            }
+          })
+
+          // Wait for challenge to be resolved via email webhook (120 second timeout)
+          console.log('Waiting for challenge code from email webhook...')
+          const startTime = Date.now()
+          const timeout = 120000 // 120 seconds
+
+          while (Date.now() - startTime < timeout) {
+            // Poll database for challenge completion
+            const { data: challengeState } = await supabase
+              .from('instagram_challenge_state')
+              .select('status, completed_at, error_message')
+              .eq('username', username)
+              .single()
+
+            if (challengeState?.status === 'completed') {
+              console.log('Challenge resolved successfully via email webhook!')
+              isLoggedIn = true
+              pendingChallenge = null
+
+              await discord.log('✅ Challenge Auto-Resolved', {
+                color: 0x00ff00,
+                metadata: {
+                  'Method': 'Email webhook',
+                  'Duration': `${Math.round((Date.now() - startTime) / 1000)}s`
+                }
+              })
+
+              // Reload the authenticated session
+              const authedSession = await loadSession()
+              if (authedSession) {
+                await ig.state.deserialize(authedSession)
+              }
+
+              return ig
+            }
+
+            if (challengeState?.status === 'failed') {
+              throw new Error(`Challenge failed: ${challengeState.error_message || 'Unknown error'}`)
+            }
+
+            // Not completed yet, wait and try again
+            await delay(2000) // Wait 2 seconds between checks
+          }
+
+          // Timeout reached without resolution
+          await discord.log('⏱️ Challenge Timeout', {
+            color: 0xff9900,
+            metadata: {
+              'Duration': '120s',
+              'Status': 'No response from email webhook'
+            }
+          })
+
           throw new Error(JSON.stringify({
-            type: 'challenge_sent',
-            message: 'Challenge code sent to email. Check sugar@vows.social for verification code.',
+            type: 'challenge_timeout',
+            message: 'Challenge email sent but not resolved within 120 seconds. Check sugar@vows.social and try again.',
             method: 'email'
           }))
         } catch (challengeError: any) {
           console.error('Challenge send failed:', challengeError)
+
+          await discord.log('⚠️ Challenge Email Failed', {
+            color: 0xff9900,
+            metadata: {
+              'Error': challengeError.message || 'Unknown error',
+              'Attempting': 'Auto-solve'
+            }
+          })
 
           // Fallback: try auto-solve
           try {
@@ -174,8 +313,26 @@ async function getInstagramClient() {
             console.log('Challenge auto-solved successfully')
             isLoggedIn = true
             pendingChallenge = null
+
+            await discord.log('✅ Challenge Auto-Solved', {
+              color: 0x00ff00,
+              metadata: {
+                'Method': 'Automatic',
+                'Status': 'Challenge resolved'
+              }
+            })
+
             return ig
           } catch (autoError) {
+            await discord.log('❌ Challenge Failed', {
+              color: 0xff0000,
+              metadata: {
+                'Error': 'Auto-solve failed',
+                'Required': 'Manual email verification',
+                'Email': 'sugar@vows.social'
+              }
+            })
+
             throw new Error(JSON.stringify({
               type: 'challenge_required',
               message: 'Instagram challenge required - check sugar@vows.social for code',
@@ -186,6 +343,16 @@ async function getInstagramClient() {
       }
 
       console.error('Instagram login failed:', error)
+
+      await discord.log('❌ Instagram Login Failed', {
+        color: 0xff0000,
+        metadata: {
+          'Username': `@${username}`,
+          'Error': error.message || 'Unknown error',
+          'Type': error.name || 'LoginError'
+        }
+      })
+
       throw new Error(`Instagram login failed: ${error.message}`)
     }
   }
@@ -321,15 +488,37 @@ async function discoverByHashtag(hashtag: string, limit: number = 20) {
 
 async function submitChallengeCode(code: string) {
   try {
-    if (!ig) {
-      throw new Error('Instagram client not initialized')
-    }
-
-    if (!pendingChallenge) {
-      throw new Error('No pending challenge to submit code for')
-    }
-
     console.log('Submitting challenge code to Instagram...')
+
+    await discord.log('🔑 Challenge Code Submitted', {
+      color: 0x0099ff,
+      metadata: {
+        'Code': code,
+        'Status': 'Submitting to Instagram...'
+      }
+    })
+
+    // Initialize client if needed (Edge Functions are stateless)
+    if (!ig) {
+      const username = Deno.env.get('INSTAGRAM_USERNAME')
+      if (!username) {
+        throw new Error('INSTAGRAM_USERNAME environment variable not set')
+      }
+
+      ig = new IgApiClient()
+      ig.state.generateDevice(username)
+
+      // Try to restore challenge session from storage
+      const savedSession = await loadSession()
+      if (savedSession) {
+        try {
+          await ig.state.deserialize(savedSession)
+          console.log('Restored session for challenge submission')
+        } catch (err) {
+          console.error('Failed to restore session for challenge:', err)
+        }
+      }
+    }
 
     // Submit the security code
     await ig.challenge.sendSecurityCode(code)
@@ -340,13 +529,47 @@ async function submitChallengeCode(code: string) {
     pendingChallenge = null
     isLoggedIn = true
 
-    // Save session to storage
+    // Save authenticated session to storage
     const session = await ig.state.serialize()
     await saveSession(session)
+
+    // Mark challenge as completed in database
+    const username = Deno.env.get('INSTAGRAM_USERNAME')
+    if (username) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      )
+
+      await supabase
+        .from('instagram_challenge_state')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString()
+        })
+        .eq('username', username)
+    }
+
+    await discord.log('✅ Challenge Code Accepted', {
+      color: 0x00ff00,
+      metadata: {
+        'Code': code,
+        'Status': 'Login completed successfully'
+      }
+    })
 
     return { success: true, message: 'Challenge completed, logged in successfully' }
   } catch (error: any) {
     console.error('Challenge code submission failed:', error)
+
+    await discord.log('❌ Challenge Code Rejected', {
+      color: 0xff0000,
+      metadata: {
+        'Code': code,
+        'Error': error.message || 'Unknown error'
+      }
+    })
+
     throw error
   }
 }
