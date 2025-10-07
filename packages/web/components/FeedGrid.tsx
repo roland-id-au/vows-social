@@ -106,7 +106,7 @@ export default function FeedGrid({ filters }: FeedGridProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {feedItems.map((feedItem, index) => (
           <FeedCard
             key={feedItem.type === 'listing' ? (feedItem.item as Venue).id : (feedItem.item as InstagramPost).id + '-' + index}
