@@ -88,9 +88,9 @@ export default function StickyVenueHeader({
       className="fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-gray-800 shadow-lg"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center h-20 gap-4">
           {/* Left: Logo + Venue Name */}
-          <div className="flex items-center gap-4 min-w-0">
+          <div className="flex items-center gap-4 min-w-0 justify-start">
             <Link href="/" className="flex-shrink-0">
               <span className={`text-2xl md:text-3xl font-bold text-white ${yeseva.className}`}>
                 The Vows Social
@@ -105,7 +105,7 @@ export default function StickyVenueHeader({
           </div>
 
           {/* Center: Navigation */}
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-2 justify-center">
             {navSections.map((section) => (
               <button
                 key={section.id}
@@ -122,7 +122,7 @@ export default function StickyVenueHeader({
           </nav>
 
           {/* Right: Actions */}
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex items-center gap-2 md:gap-3 justify-end">
             {/* Save Button - Icon only */}
             <button
               onClick={onSaveToggle}
