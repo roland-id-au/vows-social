@@ -105,9 +105,10 @@ export default function FeedCard({ item, type, index = 0 }: FeedCardProps) {
   const isNew = listing.created_at &&
     (new Date().getTime() - new Date(listing.created_at).getTime()) < (7 * 24 * 60 * 60 * 1000);
 
-  // Check if trending (updated within last 3 days)
-  const isTrending = listing.updated_at &&
-    (new Date().getTime() - new Date(listing.updated_at).getTime()) < (3 * 24 * 60 * 60 * 1000);
+  // Check if trending (based on trending_score > 70, or fallback to updated_at)
+  const isTrending = listing.trending_score !== undefined && listing.trending_score > 70
+    ? true
+    : listing.updated_at && (new Date().getTime() - new Date(listing.updated_at).getTime()) < (3 * 24 * 60 * 60 * 1000);
 
   return (
     <Link href={`/venues/${permalink}`} className="group block">

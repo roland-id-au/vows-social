@@ -137,6 +137,8 @@ export interface Venue {
   instagram_handle?: string;
   created_at?: string;
   updated_at?: string;
+  trending_score?: number;
+  trending_score_timestamp?: string;
 }
 
 export interface SearchFilters {
