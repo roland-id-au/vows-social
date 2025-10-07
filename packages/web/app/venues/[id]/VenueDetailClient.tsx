@@ -37,6 +37,10 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
     }
   };
 
+  // Check if trending (updated within last 48 hours)
+  const isTrending = venue.updated_at &&
+    (new Date().getTime() - new Date(venue.updated_at).getTime()) < (2 * 24 * 60 * 60 * 1000);
+
   // TODO: Get Instagram posts that TAG/MENTION this venue (from other users)
   // Currently showing venue's own posts as placeholder
   // Need to implement: query instagram_posts where mentions contains venue handle
@@ -61,6 +65,7 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
         onContactClick={scrollToContact}
         isSaved={isSaved}
         onSaveToggle={handleSaveToggle}
+        isTrending={isTrending}
       />
 
       {/* Hero Gallery - Full Width, with top padding for fixed header */}
