@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { Yeseva_One } from 'next/font/google';
+
+const yeseva = Yeseva_One({ weight: '400', subsets: ['latin'] });
 
 export default function Header() {
   return (
@@ -8,7 +11,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <Link href="/" className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Vows Social</h1>
+            <h1 className={`text-2xl font-bold text-gray-900 ${yeseva.className}`}>The Vows Social</h1>
           </Link>
 
           <nav className="hidden md:flex space-x-8">

@@ -1,0 +1,259 @@
+# Vendor Discovery Keywords Configuration
+# Defines search queries for automated vendor discovery via Perplexity
+
+# Discovery searches are location + service type + optional keywords
+# Example: "wedding venues in Sydney, Australia"
+# Example: "wedding photographers in Melbourne, Australia"
+
+# =============================================================================
+# VENUES
+# =============================================================================
+venues:
+  service_type: venue
+  keywords:
+    - wedding venue
+    - wedding venues
+    - reception venue
+    - ceremony venue
+    - wedding location
+
+  locations:
+    # Major Cities - Priority 1 (discover every 24 hours)
+    - city: Sydney
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    - city: Melbourne
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    - city: Brisbane
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    - city: Gold Coast
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    - city: Perth
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    - city: Adelaide
+      country: Australia
+      priority: 1
+      interval_hours: 24
+
+    # Regional Wedding Destinations - Priority 2 (discover every 48 hours)
+    - city: Byron Bay
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Hunter Valley
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Yarra Valley
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Margaret River
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Barossa Valley
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Sunshine Coast
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Cairns
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Noosa
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Port Douglas
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Mornington Peninsula
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    # Secondary Cities - Priority 3 (discover every 72 hours)
+    - city: Hobart
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+    - city: Canberra
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+    - city: Newcastle
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+    - city: Wollongong
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+# =============================================================================
+# PHOTOGRAPHERS
+# =============================================================================
+photographers:
+  service_type: photographer
+  keywords:
+    - wedding photographer
+    - wedding photographers
+    - wedding photography
+
+  locations:
+    # Major Cities Only - Priority 2
+    - city: Sydney
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Melbourne
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Brisbane
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Gold Coast
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+# =============================================================================
+# VIDEOGRAPHERS
+# =============================================================================
+videographers:
+  service_type: videographer
+  keywords:
+    - wedding videographer
+    - wedding videographers
+    - wedding videography
+    - wedding films
+
+  locations:
+    - city: Sydney
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+    - city: Melbourne
+      country: Australia
+      priority: 2
+      interval_hours: 48
+
+# =============================================================================
+# FLORISTS
+# =============================================================================
+florists:
+  service_type: florist
+  keywords:
+    - wedding florist
+    - wedding florists
+    - wedding flowers
+    - bridal florist
+
+  locations:
+    - city: Sydney
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+    - city: Melbourne
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+# =============================================================================
+# CATERERS
+# =============================================================================
+caterers:
+  service_type: caterer
+  keywords:
+    - wedding caterer
+    - wedding catering
+    - wedding food
+
+  locations:
+    - city: Sydney
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+    - city: Melbourne
+      country: Australia
+      priority: 3
+      interval_hours: 72
+
+# =============================================================================
+# CONFIGURATION NOTES
+# =============================================================================
+#
+# Priority Levels:
+#   1 = Highest (major markets, discover daily)
+#   2 = Medium (secondary markets, discover every 2 days)
+#   3 = Lower (tertiary markets, discover every 3 days)
+#
+# Interval Hours:
+#   24  = Daily discovery
+#   48  = Every 2 days
+#   72  = Every 3 days
+#   168 = Weekly
+#
+# Keywords:
+#   - Used to build Perplexity search queries
+#   - Example: "wedding venue in Sydney, Australia"
+#   - Multiple keywords = multiple discovery queries
+#
+# Adding New Services:
+#   1. Add service section (e.g., "planners:")
+#   2. Define service_type
+#   3. Add keywords
+#   4. Add locations with priorities
+#   5. Re-seed discovery queue
+#
+# Adding New Locations:
+#   - Add to appropriate service section
+#   - Set priority based on market size
+#   - Set interval based on how often to discover
+#
+# International Expansion:
+#   - Just add new locations with country
+#   - Example:
+#     - city: Auckland
+#       country: New Zealand
+#       priority: 1
+#       interval_hours: 24

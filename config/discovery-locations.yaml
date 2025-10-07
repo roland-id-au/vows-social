@@ -1,0 +1,100 @@
+# Vendor Discovery Configuration
+# Define locations and service types for automated vendor discovery
+
+locations:
+  - state: NSW
+    priority: 1
+    interval_hours: 24
+    cities:
+      - Sydney
+      - Newcastle
+      - Wollongong
+      - Central Coast
+      - Blue Mountains
+      - Hunter Valley
+      - Southern Highlands
+      - Byron Bay
+
+  - state: VIC
+    priority: 1
+    interval_hours: 24
+    cities:
+      - Melbourne
+      - Geelong
+      - Ballarat
+      - Bendigo
+      - Mornington Peninsula
+      - Yarra Valley
+      - Great Ocean Road
+
+  - state: QLD
+    priority: 1
+    interval_hours: 24
+    cities:
+      - Brisbane
+      - Gold Coast
+      - Sunshine Coast
+      - Cairns
+      - Townsville
+      - Toowoomba
+      - Whitsundays
+      - Port Douglas
+
+  - state: SA
+    priority: 2
+    interval_hours: 48
+    cities:
+      - Adelaide
+      - Barossa Valley
+      - McLaren Vale
+      - Adelaide Hills
+
+  - state: WA
+    priority: 2
+    interval_hours: 48
+    cities:
+      - Perth
+      - Fremantle
+      - Margaret River
+      - Swan Valley
+
+  - state: TAS
+    priority: 3
+    interval_hours: 72
+    cities:
+      - Hobart
+      - Launceston
+      - Cradle Mountain
+
+  - state: ACT
+    priority: 3
+    interval_hours: 72
+    cities:
+      - Canberra
+
+  - state: NT
+    priority: 3
+    interval_hours: 72
+    cities:
+      - Darwin
+      - Alice Springs
+
+service_types:
+  - venue
+  - photographer
+  - videographer
+  - florist
+  - caterer
+  - planner
+  - decorator
+  - celebrant
+  - cake
+  - makeup
+  - hair
+  - entertainment
+  - transport
+
+# Discovery schedule strategy:
+# - Priority 1: Major metro areas, discover every 24 hours
+# - Priority 2: Secondary metro areas, discover every 48 hours
+# - Priority 3: Smaller regions, discover every 72 hours

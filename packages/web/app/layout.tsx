@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Vows Social - Wedding Venue Marketplace",
+  title: "The Vows Social - Wedding Venue Marketplace",
   description: "Discover and book your perfect wedding venue",
 };
 

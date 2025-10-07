@@ -219,7 +219,7 @@ async function syncInstagramAccount(
 
 // Main handler
 Deno.serve(async (req) => {
-  const logger = new Logger('sync-instagram-vendors')
+  const logger = new Logger('instagram-sync-vendors')
   const discord = new DiscordLogger()
   const startTime = Date.now()
 

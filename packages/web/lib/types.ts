@@ -1,8 +1,26 @@
 export enum VenueCategory {
   Venue = 'venue',
-  Catering = 'catering',
+  Caterer = 'caterer',
+  Florist = 'florist',
+  Photographer = 'photographer',
+  Videographer = 'videographer',
+  Musician = 'musician',
+  Stylist = 'stylist',
+  Planner = 'planner',
   Experience = 'experience',
 }
+
+export const VenueCategoryDisplay: Record<string, string> = {
+  venue: 'Venues',
+  caterer: 'Catering',
+  florist: 'Florals',
+  photographer: 'Photography',
+  videographer: 'Videography',
+  musician: 'Music',
+  stylist: 'Styling',
+  planner: 'Planning',
+  experience: 'Experiences',
+};
 
 export enum VenueStyle {
   Modern = 'modern',
@@ -62,12 +80,13 @@ export interface ListingMedia {
   listing_id: string;
   url: string;
   media_type: string;
-  order_index?: number;
+  order?: number;
 }
 
 export interface Venue {
   id: string;
   title: string;
+  slug: string;
   description: string;
   category: string;
   style: string;
@@ -96,4 +115,5 @@ export interface SearchFilters {
   minCapacity?: number;
   maxCapacity?: number;
   styles?: VenueStyle[];
+  category?: string; // Filter by vendor category
 }

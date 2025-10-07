@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Venue } from '@/lib/types';
-import { formatPriceRange, getVenueImages, getShortAddress } from '@/lib/supabase-service';
+import { formatPriceRange, getVenueImages, getShortAddress, generateVenuePermalink } from '@/lib/supabase-service';
 
 interface VenueCardProps {
   venue: Venue;
@@ -13,9 +13,10 @@ export default function VenueCard({ venue }: VenueCardProps) {
   const images = getVenueImages(venue);
   const mainImage = images[0] || '/placeholder-venue.jpg';
   const shortAddress = getShortAddress(venue.location_data);
+  const permalink = generateVenuePermalink(venue);
 
   return (
-    <Link href={`/venues/${venue.id}`} className="group">
+    <Link href={`/venues/${permalink}`} className="group">
       <div className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-lg transition-shadow duration-300">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">

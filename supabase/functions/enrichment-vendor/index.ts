@@ -4,18 +4,22 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { downloadAndStoreImages } from '../_shared/image-storage.ts'
+import { DiscordLogger } from '../_shared/discord-logger.ts'
+import { perplexityCache } from '../_shared/perplexity-cache.ts'
+import { FirecrawlClient } from '../_shared/firecrawl-client.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface VenueResearchRequest {
-  venueName: string
-  location: string
-  city: string
-  state: string
-  serviceType?: string // 'venue', 'caterer', 'florist', 'photographer', etc.
+interface VendorEnrichmentRequest {
+  discovery_id?: string // NEW: Pass discovery ID to enrich from queue
+  venueName?: string     // OLD: Manual enrichment
+  location?: string
+  city?: string
+  state?: string
+  serviceType?: string
   forceRefresh?: boolean
 }
 
@@ -65,15 +69,71 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  let discoveryId: string | null = null // Declare outside try block so it's accessible in catch
+
   try {
-    const { venueName, location, city, state, serviceType = 'venue', forceRefresh = false } =
-      await req.json() as VenueResearchRequest
+    const requestBody = await req.json() as VendorEnrichmentRequest
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+    const discord = new DiscordLogger()
 
-    // Check if venue already exists (unless force refresh)
+    let venueName: string
+    let location: string
+    let city: string
+    let state: string
+    let serviceType: string
+    let forceRefresh: boolean
+
+    // NEW APPROACH: If discovery_id provided, fetch from database
+    if (requestBody.discovery_id) {
+      discoveryId = requestBody.discovery_id
+
+      console.log(`Enriching discovery: ${discoveryId}`)
+
+      const { data: discovery, error } = await supabase
+        .from('discovered_listings')
+        .select('*')
+        .eq('id', discoveryId)
+        .single()
+
+      if (error || !discovery) {
+        console.error(`Discovery fetch error:`, error)
+        throw new Error(`Discovery not found: ${discoveryId}`)
+      }
+
+      console.log(`Found discovery: ${discovery.name}`)
+
+      // Update status to processing
+      await supabase
+        .from('discovered_listings')
+        .update({
+          enrichment_status: 'processing',
+          enrichment_attempts: (discovery.enrichment_attempts || 0) + 1,
+          last_enrichment_attempt: new Date().toISOString()
+        })
+        .eq('id', discoveryId)
+
+      venueName = discovery.name
+      location = discovery.location || discovery.city
+      city = discovery.city
+      state = discovery.state
+      serviceType = discovery.type || 'venue'
+      forceRefresh = false
+
+      console.log(`Enriching: ${venueName} in ${city}, ${state}`)
+    } else {
+      // OLD APPROACH: Manual parameters
+      venueName = requestBody.venueName!
+      location = requestBody.location!
+      city = requestBody.city!
+      state = requestBody.state!
+      serviceType = requestBody.serviceType || 'venue'
+      forceRefresh = requestBody.forceRefresh || false
+    }
+
+    // Check if vendor already exists (unless force refresh)
     if (!forceRefresh) {
       const { data: existing } = await supabase
         .from('listings')
@@ -82,6 +142,40 @@ serve(async (req) => {
         .single()
 
       if (existing) {
+        // If this is from a discovery queue, link the discovery to the existing listing
+        if (discoveryId) {
+          // Fetch slug for the existing listing
+          const { data: existingWithSlug } = await supabase
+            .from('listings')
+            .select('slug')
+            .eq('id', existing.id)
+            .single()
+
+          await supabase
+            .from('discovered_listings')
+            .update({
+              enrichment_status: 'enriched',
+              listing_id: existing.id,
+              researched_at: new Date().toISOString()
+            })
+            .eq('id', discoveryId)
+
+          const vendorUrl = `https://vows.social/venues/${existingWithSlug?.slug || existing.id}`
+
+          console.log(`✅ Linked discovery to existing listing: ${existing.title}`)
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: `Linked discovery to existing listing`,
+              listingId: existing.id,
+              vendorUrl
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // Manual enrichment - require forceRefresh
         return new Response(
           JSON.stringify({
             success: false,
@@ -278,6 +372,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'sonar-pro', // Use pro model for deep research
+        return_images: true, // Request image URLs from Perplexity
+        return_citations: true,
         messages: [
           {
             role: 'system',
@@ -346,18 +442,124 @@ Location hint: ${location}`
 
     const perplexityData = await perplexityResponse.json()
     console.log('Perplexity response received')
+    console.log('Response keys:', Object.keys(perplexityData))
 
+    // Log if images field exists anywhere in response
+    if (perplexityData.images) {
+      console.log('Images found in response root:', perplexityData.images.length)
+    }
+    if (perplexityData.choices?.[0]?.images) {
+      console.log('Images found in choices[0]:', perplexityData.choices[0].images.length)
+    }
+
+    // Extract structured venue data
     const venueData: PerplexityDeepVenueData = JSON.parse(
       perplexityData.choices[0].message.content
     )
 
+    // Extract images from Perplexity metadata (return_images parameter)
+    const perplexityImages = perplexityData.images || perplexityData.choices?.[0]?.images || []
+    console.log(`Perplexity returned ${perplexityImages.length} images via return_images`)
+
+    // Combine image URLs from both sources
+    let allImageUrls = venueData.image_urls || []
+    if (perplexityImages.length > 0) {
+      const imageUrlsFromMetadata = perplexityImages.map((img: any) => img.url || img.imageUrl).filter(Boolean)
+      allImageUrls = [...allImageUrls, ...imageUrlsFromMetadata]
+      console.log(`Combined total: ${allImageUrls.length} images`)
+    }
+
+    // Update venueData with all images
+    venueData.image_urls = allImageUrls
+
     console.log(`Research complete: ${venueData.title}`)
-    console.log(`Found ${venueData.image_urls?.length || 0} images`)
+    console.log(`Found ${venueData.image_urls?.length || 0} images from Perplexity`)
+
+    // If venue has a website, use Firecrawl to scrape for more images and packages
+    if (venueData.website) {
+      console.log(`🔍 Scraping website for additional content: ${venueData.website}`)
+
+      const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY')!
+      const firecrawl = new FirecrawlClient(firecrawlApiKey)
+
+      const scrapedData = await firecrawl.scrapeVenueWebsite(venueData.website)
+
+      if (scrapedData) {
+        // Extract all image URLs from scraped data
+        const firecrawlImages = firecrawl.extractAllImageUrls(scrapedData)
+        console.log(`✅ Firecrawl found ${firecrawlImages.length} images from website`)
+
+        // Merge Firecrawl images with Perplexity images
+        const combinedImages = [...allImageUrls, ...firecrawlImages]
+        const uniqueImages = [...new Set(combinedImages)] // Remove duplicates
+        venueData.image_urls = uniqueImages
+
+        console.log(`📸 Total unique images after Firecrawl: ${uniqueImages.length}`)
+
+        // Merge packages from Firecrawl with Perplexity packages
+        if (scrapedData.packages && scrapedData.packages.length > 0) {
+          const existingPackageNames = new Set(venueData.packages?.map(p => p.name.toLowerCase()) || [])
+
+          // Convert Firecrawl packages to our format
+          const firecrawlPackages = scrapedData.packages
+            .filter(pkg => !existingPackageNames.has(pkg.name.toLowerCase())) // Avoid duplicates
+            .map(pkg => ({
+              name: pkg.name,
+              price: pkg.price ? parseFloat(pkg.price.replace(/[^0-9.]/g, '')) : 0,
+              description: pkg.description || '',
+              inclusions: pkg.inclusions || []
+            }))
+
+          if (firecrawlPackages.length > 0) {
+            venueData.packages = [...(venueData.packages || []), ...firecrawlPackages]
+            console.log(`📦 Added ${firecrawlPackages.length} packages from Firecrawl`)
+          }
+        }
+
+        // Update contact info if Firecrawl found better data
+        if (scrapedData.contact_email && !venueData.email) {
+          venueData.email = scrapedData.contact_email
+        }
+        if (scrapedData.contact_phone && !venueData.phone) {
+          venueData.phone = scrapedData.contact_phone
+        }
+
+        // Add features from Firecrawl
+        if (scrapedData.features && scrapedData.features.length > 0) {
+          const existingFeatures = new Set(venueData.amenities?.map(a => a.toLowerCase()) || [])
+          const newFeatures = scrapedData.features.filter(f => !existingFeatures.has(f.toLowerCase()))
+          if (newFeatures.length > 0) {
+            venueData.amenities = [...(venueData.amenities || []), ...newFeatures]
+            console.log(`✨ Added ${newFeatures.length} features from Firecrawl`)
+          }
+        }
+      }
+    } else {
+      console.log('⚠️ No website URL found, skipping Firecrawl scraping')
+    }
+
+    console.log(`📊 Final stats: ${venueData.image_urls?.length || 0} images, ${venueData.packages?.length || 0} packages`)
+
+    // Generate SEO-friendly slug: "venue-name-city-state"
+    const generateSlug = (title: string, city: string, state: string): string => {
+      const slugText = `${title}-${city}-${state}`
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, '') // Remove special characters
+        .replace(/\s+/g, '-')          // Replace spaces with hyphens
+        .replace(/-+/g, '-')           // Replace multiple hyphens with single
+        .replace(/^-|-$/g, '')         // Remove leading/trailing hyphens
+
+      return slugText
+    }
+
+    const slug = generateSlug(venueData.title, venueData.city, venueData.state)
+    console.log(`Generated slug: ${slug}`)
 
     // Save listing to database
     const listingData = {
       source_type: 'perplexity_deep_research',
       title: venueData.title,
+      slug: slug,
       description: venueData.detailed_description || venueData.description,
       category: serviceType,
       service_type: serviceLabel,
@@ -411,8 +613,9 @@ Location hint: ${location}`
     console.log(`Venue saved with ID: ${listing.id}`)
 
     // Download and store images in Supabase Storage
+    let storedImages: any[] = []
     if (venueData.image_urls && venueData.image_urls.length > 0) {
-      const storedImages = await downloadAndStoreImages(
+      storedImages = await downloadAndStoreImages(
         supabase,
         venueData.image_urls,
         listing.id,
@@ -429,7 +632,7 @@ Location hint: ${location}`
           listing_id: listing.id,
           media_type: 'image',
           url: img.url,
-          source: 'perplexity_research',
+          source: 'web_scraping', // Combined from Perplexity + Firecrawl
           order_index: index,
           metadata: {
             size: img.size,
@@ -520,11 +723,31 @@ Location hint: ${location}`
       metadata: {
         venue_id: listing.id,
         venue_name: venueData.title,
-        images_found: validatedImages.length,
+        images_found: storedImages.length,
         packages_found: venueData.packages?.length || 0
       },
       timestamp: new Date().toISOString()
     })
+
+    // Update discovery status if this was from queue
+    if (discoveryId) {
+      await supabase
+        .from('discovered_listings')
+        .update({
+          enrichment_status: 'enriched',
+          listing_id: listing.id,
+          researched_at: new Date().toISOString()
+        })
+        .eq('id', discoveryId)
+
+      const vendorUrl = `https://vows.social/venues/${slug}`
+
+      await discord.success(`✅ Enriched: ${venueData.title}`, {
+        'Images': storedImages.length.toString(),
+        'Packages': (venueData.packages?.length || 0).toString(),
+        'View': vendorUrl
+      })
+    }
 
     return new Response(
       JSON.stringify({
@@ -532,11 +755,12 @@ Location hint: ${location}`
         listing: {
           id: listing.id,
           title: venueData.title,
-          images_count: validatedImages.length,
+          images_count: storedImages.length,
           packages_count: venueData.packages?.length || 0,
-          tags_count: venueData.tags?.length || 0
+          tags_count: venueData.tags?.length || 0,
+          primary_image_url: storedImages[0] || null
         },
-        message: `Venue "${venueData.title}" successfully researched and added with ${validatedImages.length} images`
+        message: `Vendor "${venueData.title}" successfully enriched with ${storedImages.length} images`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -544,25 +768,48 @@ Location hint: ${location}`
       },
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error:', error)
+
+    const errorMessage = error?.message || error?.toString() || 'Unknown error'
 
     // Log error
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
+    const discord = new DiscordLogger()
 
-    await supabase.from('sync_logs').insert({
-      source: 'perplexity_deep_research',
-      status: 'error',
-      errors: error.message,
-      timestamp: new Date().toISOString()
-    })
+    // Update discovery status if this was from queue
+    if (discoveryId) {
+      try {
+        await supabase
+          .from('discovered_listings')
+          .update({
+            enrichment_status: 'failed'
+          })
+          .eq('id', discoveryId)
+
+        await discord.error(`Enrichment failed: ${errorMessage}`)
+      } catch (e) {
+        console.error('Failed to update discovery status:', e)
+      }
+    }
+
+    try {
+      await supabase.from('sync_logs').insert({
+        source: 'perplexity_deep_research',
+        status: 'error',
+        errors: errorMessage,
+        timestamp: new Date().toISOString()
+      })
+    } catch (e) {
+      console.error('Failed to insert sync log:', e)
+    }
 
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: errorMessage
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

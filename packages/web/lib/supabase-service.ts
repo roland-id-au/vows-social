@@ -26,7 +26,10 @@ export async function getTrendingVenues(
 
     if (error) throw error;
 
-    const venues = (data || []) as Venue[];
+    // Filter out venues without images
+    const venues = (data || []).filter(venue =>
+      venue.listing_media && venue.listing_media.length > 0
+    ) as Venue[];
     const hasMore = count ? from + venues.length < count : false;
 
     return { venues, hasMore };
@@ -86,8 +89,12 @@ export async function searchVenues(
     if (filters.styles && filters.styles.length > 0) {
       query = query.in(
         'style',
-        filters.styles.map((s) => s.toString())
+        filters.styles.filter(s => s != null).map((s) => s.toString())
       );
+    }
+
+    if (filters.category) {
+      query = query.eq('category', filters.category);
     }
 
     const { data, error, count } = await query
@@ -96,7 +103,10 @@ export async function searchVenues(
 
     if (error) throw error;
 
-    const venues = (data || []) as Venue[];
+    // Filter out venues without images
+    const venues = (data || []).filter(venue =>
+      venue.listing_media && venue.listing_media.length > 0
+    ) as Venue[];
     const hasMore = count ? from + venues.length < count : false;
 
     return { venues, hasMore };
@@ -115,8 +125,7 @@ export async function getVenueById(id: string): Promise<Venue | null> {
         *,
         listing_media(*),
         listing_tags(tag_name, tags(*)),
-        packages(*),
-        instagram_posts(*)
+        packages(*)
       `
       )
       .eq('id', id)
@@ -133,6 +142,9 @@ export async function getVenueById(id: string): Promise<Venue | null> {
 
 export async function getVenueBySlug(slug: string): Promise<Venue | null> {
   try {
+    console.log('getVenueBySlug called with:', slug);
+    console.log('Supabase client initialized:', !!supabase);
+
     const { data, error } = await supabase
       .from('listings')
       .select(
@@ -140,13 +152,13 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
         *,
         listing_media(*),
         listing_tags(tag_name, tags(*)),
-        packages(*),
-        instagram_posts(*)
+        packages(*)
       `
       )
       .eq('slug', slug)
       .single();
 
+    console.log('Supabase query result - data:', !!data, 'error:', error);
     if (error) throw error;
 
     return data as Venue;
@@ -157,6 +169,7 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
 }
 
 export function formatPrice(price: number): string {
+  if (!price || isNaN(price)) return '0';
   if (price >= 1000) {
     const k = price / 1000;
     return `${k.toFixed(k % 1 === 0 ? 0 : 1)}k`;
@@ -165,12 +178,15 @@ export function formatPrice(price: number): string {
 }
 
 export function formatPriceRange(priceData: PriceData): string {
+  if (!priceData || !priceData.min_price || !priceData.max_price) {
+    return 'Price on request';
+  }
   return `$${formatPrice(priceData.min_price)} - $${formatPrice(priceData.max_price)}`;
 }
 
 export function getVenueImages(venue: Venue): string[] {
   return (venue.listing_media || [])
-    .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+    .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map((media) => media.url);
 }
 
@@ -179,4 +195,45 @@ export function getShortAddress(location: LocationData): string {
     return `${location.locality}, ${location.city}`;
   }
   return `${location.city}, ${location.state}`;
+}
+
+// Generate SEO-friendly permalink: /[country-code]-wedding-venue-{location}-{slug}
+export function generateVenuePermalink(venue: Venue): string {
+  const countryCode = getCountryCode(venue.location_data.country);
+  const location = venue.location_data.city.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const slug = venue.slug || venue.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+  return `${countryCode}-wedding-venue-${location}-${slug}`;
+}
+
+// Get 2-letter country code
+function getCountryCode(country: string): string {
+  const countryMap: Record<string, string> = {
+    'Australia': 'au',
+    'United States': 'us',
+    'United Kingdom': 'uk',
+    'Canada': 'ca',
+    'New Zealand': 'nz',
+  };
+
+  return countryMap[country] || country.substring(0, 2).toLowerCase();
+}
+
+// Parse permalink to extract slug
+export function parseVenuePermalink(permalink: string): string | null {
+  // Format: au-wedding-venue-sydney-establishment-ballroom
+  // Extract the slug part (everything after the last occurrence of location)
+  const parts = permalink.split('-wedding-venue-');
+  if (parts.length < 2) return null;
+
+  // Return the part after "wedding-venue-{location}-"
+  const afterLocation = parts[1];
+  const locationAndSlug = afterLocation.split('-');
+
+  // Skip the first part (location) and join the rest as the slug
+  if (locationAndSlug.length > 1) {
+    return locationAndSlug.slice(1).join('-');
+  }
+
+  return afterLocation;
 }

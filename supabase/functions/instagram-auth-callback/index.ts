@@ -29,7 +29,7 @@ interface InstagramUserProfile {
 }
 
 Deno.serve(async (req) => {
-  const logger = new Logger('instagram-oauth-callback')
+  const logger = new Logger('instagram-auth-callback')
   const discord = new DiscordLogger()
 
   try {

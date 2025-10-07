@@ -5,46 +5,25 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-// Helper function to log to Discord
-async function logToDiscord(message: string, level: 'info' | 'error' | 'success' = 'info') {
-  const webhookUrl = Deno.env.get('DISCORD_WEBHOOK_URL')
-  if (!webhookUrl) return
-
-  const colors = { info: 0x3498db, error: 0xe74c3c, success: 0x2ecc71 }
-  const emojis = { info: 'ℹ️', error: '❌', success: '✅' }
-
-  try {
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        embeds: [{
-          title: `${emojis[level]} Morning Discovery Pipeline`,
-          description: message,
-          color: colors[level],
-          timestamp: new Date().toISOString()
-        }]
-      })
-    })
-  } catch (error) {
-    console.error('Discord logging failed:', error)
-  }
-}
+import { Logger } from '../_shared/logger.ts'
+import { DiscordLogger } from '../_shared/discord-logger.ts'
 
 serve(async (req) => {
+  const logger = new Logger('discovery-run-pipeline')
+  const discord = new DiscordLogger()
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    console.log('🌅 Starting morning discovery pipeline...')
-    await logToDiscord('🌅 Starting morning discovery pipeline...')
+    logger.info('Starting discovery pipeline')
+    await discord.log('🌅 Discovery Pipeline Started', { color: 0x3498db })
 
     // STEP 1A: Discover trending venues from Instagram
     console.log('\n📸 Step 1A: Discovering trending venues...')
 
-    const venueDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discover-trending-venues`, {
+    const venueDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discovery-venues`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -56,7 +35,7 @@ serve(async (req) => {
       const errorText = await venueDiscoveryResponse.text()
       const errorMsg = `Venue discovery HTTP error: ${venueDiscoveryResponse.status} - ${errorText}`
       console.error(errorMsg)
-      await logToDiscord(errorMsg, 'error')
+      await discord.error(errorMsg)
       throw new Error(errorMsg)
     }
 
@@ -68,23 +47,25 @@ serve(async (req) => {
     } catch (parseError) {
       const errorMsg = `Venue discovery JSON parse error. Response: ${venueDiscoveryText.substring(0, 200)}`
       console.error(errorMsg)
-      await logToDiscord(errorMsg, 'error')
+      await discord.error(errorMsg)
       throw new Error(errorMsg)
     }
 
     if (!venueDiscoveryResult.success) {
       const errorMsg = `Venue discovery failed: ${venueDiscoveryResult.error}`
-      await logToDiscord(errorMsg, 'error')
+      await discord.error(errorMsg)
       throw new Error(errorMsg)
     }
 
-    console.log(`Found ${venueDiscoveryResult.new_discoveries} new trending venues`)
-    await logToDiscord(`📸 Found ${venueDiscoveryResult.new_discoveries} new trending venues`)
+    logger.info(`Found ${venueDiscoveryResult.new_discoveries} new venues`)
+    await discord.discovery(`Found ${venueDiscoveryResult.new_discoveries} new venues`, {
+      new: venueDiscoveryResult.new_discoveries
+    })
 
     // STEP 1B: Discover trending wedding services from Instagram
     console.log('\n💐 Step 1B: Discovering trending wedding services...')
 
-    const serviceDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discover-wedding-services`, {
+    const serviceDiscoveryResponse = await fetch(`${supabaseUrl}/functions/v1/discovery-services`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${supabaseKey}`,
@@ -97,24 +78,29 @@ serve(async (req) => {
     if (!serviceDiscoveryResponse.ok) {
       const errorText = await serviceDiscoveryResponse.text()
       console.warn(`Service discovery HTTP error: ${serviceDiscoveryResponse.status} - ${errorText}`)
-      await logToDiscord(`⚠️ Service discovery failed: ${errorText.substring(0, 100)}`, 'error')
+      await discord.error(`Service discovery failed: ${errorText.substring(0, 100)}`)
     } else {
       const serviceDiscoveryText = await serviceDiscoveryResponse.text()
       try {
         serviceDiscoveryResult = JSON.parse(serviceDiscoveryText)
         if (!serviceDiscoveryResult.success) {
-          console.warn(`Service discovery failed: ${serviceDiscoveryResult.error}`)
+          logger.warn(`Service discovery failed: ${serviceDiscoveryResult.error}`)
         } else {
-          await logToDiscord(`💐 Found ${serviceDiscoveryResult.new_discoveries} new trending services`)
+          await discord.discovery(`Found ${serviceDiscoveryResult.new_discoveries} new services`, {
+            new: serviceDiscoveryResult.new_discoveries
+          })
         }
       } catch (parseError) {
-        console.warn(`Service discovery JSON parse error: ${serviceDiscoveryText.substring(0, 100)}`)
+        logger.warn(`Service discovery JSON parse error: ${serviceDiscoveryText.substring(0, 100)}`)
       }
     }
 
     const totalNewDiscoveries = venueDiscoveryResult.new_discoveries + (serviceDiscoveryResult.new_discoveries || 0)
-    console.log(`Total new discoveries: ${totalNewDiscoveries} (${venueDiscoveryResult.new_discoveries} venues + ${serviceDiscoveryResult.new_discoveries || 0} services)`)
-    await logToDiscord(`🎯 Total discoveries: ${totalNewDiscoveries} (${venueDiscoveryResult.new_discoveries} venues + ${serviceDiscoveryResult.new_discoveries || 0} services)`, 'success')
+    logger.info(`Total discoveries: ${totalNewDiscoveries}`)
+    await discord.success(`Total discoveries: ${totalNewDiscoveries}`, {
+      'Venues': venueDiscoveryResult.new_discoveries.toString(),
+      'Services': (serviceDiscoveryResult.new_discoveries || 0).toString()
+    })
 
     // STEP 2: Research top 5 discovered venues (increased from 3 for faster growth)
     console.log('\n🔍 Step 2: Researching discovered venues...')
@@ -133,7 +119,7 @@ serve(async (req) => {
         console.log(`Researching: ${discovery.name}...`)
 
         try {
-          const researchResponse = await fetch(`${supabaseUrl}/functions/v1/deep-research-venue`, {
+          const researchResponse = await fetch(`${supabaseUrl}/functions/v1/enrichment-venue`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${supabaseKey}`,
@@ -188,8 +174,10 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Researched ${researchedVenues.length} new listings`)
-    await logToDiscord(`🔍 Researched ${researchedVenues.length} new listings`, 'success')
+    logger.info(`Researched ${researchedVenues.length} new listings`)
+    await discord.enrichment(`Researched ${researchedVenues.length} new listings`, {
+      enriched: researchedVenues.length
+    })
 
     // STEP 3: Verify enrichment and send push notifications
     if (researchedVenues.length > 0) {
@@ -201,7 +189,7 @@ serve(async (req) => {
       )
 
       console.log(`Fully enriched listings: ${fullyEnriched.length}/${researchedVenues.length}`)
-      await logToDiscord(`✅ Enrichment: ${fullyEnriched.length}/${researchedVenues.length} fully enriched`)
+      await discord.log(`✅ Enrichment: ${fullyEnriched.length}/${researchedVenues.length} fully enriched`)
 
       if (fullyEnriched.length === 0) {
         console.log('No fully enriched listings to notify about')
@@ -258,9 +246,9 @@ serve(async (req) => {
           await Promise.allSettled(notificationPromises)
 
           console.log(`Sent notifications to ${users.length} users`)
-          await logToDiscord(`📱 Sent ${fullyEnriched.length} listing notifications to ${users.length} users`, 'success')
+          await discord.log(`📱 Sent ${fullyEnriched.length} listing notifications to ${users.length} users`, 'success')
         } else {
-          await logToDiscord('📱 No users to notify (no push tokens)', 'info')
+          await discord.log('📱 No users to notify (no push tokens)', 'info')
         }
       }
     }

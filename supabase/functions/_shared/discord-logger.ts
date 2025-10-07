@@ -30,11 +30,13 @@ export class DiscordLogger {
 
     // Add metadata as fields
     if (options.metadata) {
-      embed.fields = Object.entries(options.metadata).map(([name, value]) => ({
-        name,
-        value: value.toString(),
-        inline: true
-      }))
+      embed.fields = Object.entries(options.metadata)
+        .filter(([_, value]) => value != null)
+        .map(([name, value]) => ({
+          name,
+          value: value.toString(),
+          inline: true
+        }))
     }
 
     const payload = {
@@ -70,11 +72,29 @@ export class DiscordLogger {
     })
   }
 
-  async error(message: string, error?: any) {
+  async error(message: string, error?: any, metadata?: Record<string, string>) {
+    const errorMetadata = error ? { Error: error.message || error.toString() } : {}
     await this.log(`❌ ${message}`, {
       color: 0xe74c3c,
-      metadata: error ? { Error: error.message || error.toString() } : undefined
+      metadata: { ...errorMetadata, ...metadata }
     })
+  }
+
+  async warning(message: string, metadata?: Record<string, string>) {
+    await this.log(`⚠️ ${message}`, {
+      color: 0xffa500,
+      metadata
+    })
+  }
+
+  // Alias for warning
+  async logWarning(message: string, metadata?: Record<string, string>) {
+    await this.warning(message, metadata)
+  }
+
+  // Alias for discovery
+  async logDiscovery(message: string, metadata?: Record<string, string>) {
+    await this.discovery(message, metadata as any)
   }
 
   async success(message: string, metadata?: Record<string, string>) {

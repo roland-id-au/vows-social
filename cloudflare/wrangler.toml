@@ -1,0 +1,11 @@
+name = "images-vows-social"
+main = "images-worker.js"
+compatibility_date = "2024-01-01"
+workers_dev = true
+
+routes = [
+  { pattern = "images.vows.social/*", zone_name = "vows.social" }
+]
+
+# Account ID (found from wrangler whoami)
+account_id = "c6e610a42f1f261bb8e487c8ff6036e4"

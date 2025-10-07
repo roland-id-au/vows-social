@@ -440,7 +440,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildCategorySelector() {
-    final categories = ['All', 'Venue', 'Catering', 'Experience'];
+    final categories = [
+      {'id': 'All', 'label': 'All', 'icon': '✨'},
+      {'id': 'venue', 'label': 'Venues', 'icon': '🏛️'},
+      {'id': 'caterer', 'label': 'Catering', 'icon': '🍽️'},
+      {'id': 'photographer', 'label': 'Photography', 'icon': '📸'},
+      {'id': 'florist', 'label': 'Florals', 'icon': '💐'},
+      {'id': 'videographer', 'label': 'Videography', 'icon': '🎥'},
+      {'id': 'musician', 'label': 'Music', 'icon': '🎵'},
+      {'id': 'stylist', 'label': 'Styling', 'icon': '✨'},
+      {'id': 'planner', 'label': 'Planning', 'icon': '📋'},
+    ];
 
     return SizedBox(
       height: 40,
@@ -450,7 +460,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
-          final isSelected = _selectedCategory == category;
+          final categoryId = category['id'] as String;
+          final categoryLabel = category['label'] as String;
+          final categoryIcon = category['icon'] as String;
+          final isSelected = _selectedCategory == categoryId;
 
           return Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -458,7 +471,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
-                  setState(() => _selectedCategory = category);
+                  setState(() => _selectedCategory = categoryId);
                 },
                 borderRadius: BorderRadius.circular(20),
                 child: AnimatedContainer(
@@ -466,18 +479,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   curve: Curves.easeInOut,
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF222222) : Colors.white,
+                    color: isSelected ? const Color(0xFF2563eb) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                       color: isSelected
-                          ? const Color(0xFF222222)
+                          ? const Color(0xFF2563eb)
                           : Colors.grey.withOpacity(0.25),
                       width: 1.5,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.08),
+                              color: const Color(0xFF2563eb).withOpacity(0.3),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -485,14 +498,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         : [],
                   ),
                   child: Center(
-                    child: Text(
-                      category,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: isSelected ? Colors.white : const Color(0xFF666666),
-                        letterSpacing: -0.2,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          categoryIcon,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          categoryLabel,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : const Color(0xFF666666),
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
