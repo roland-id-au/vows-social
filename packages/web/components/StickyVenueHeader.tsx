@@ -90,21 +90,21 @@ export default function StickyVenueHeader({
       className="fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-gray-800 shadow-lg"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
           {/* Left: Logo + Venue Name */}
           <div className="flex items-center gap-4 min-w-0">
             <Link href="/" className="flex-shrink-0">
-              <span className={`text-xl md:text-2xl font-bold text-white ${yeseva.className}`}>
+              <span className={`text-2xl md:text-3xl font-bold text-white ${yeseva.className}`}>
                 The Vows Social
               </span>
             </Link>
 
-            <div className="hidden lg:block w-px h-8 bg-gray-700" />
+            <div className="hidden lg:block w-px h-10 bg-gray-700" />
 
-            <h2 className="hidden lg:flex items-center gap-2 font-semibold text-sm md:text-base text-white truncate">
+            <h2 className="hidden lg:flex items-center gap-2 font-semibold text-base md:text-lg text-white truncate">
               {venueName}
               {isTrending && (
-                <span className="bg-gradient-to-r from-orange-500 to-pink-500 px-2 py-0.5 rounded-full text-xs font-bold whitespace-nowrap">
+                <span className="bg-gradient-to-r from-orange-500 to-pink-500 px-3 py-1 rounded-full text-sm font-bold whitespace-nowrap">
                   🔥 Trending
                 </span>
               )}
@@ -112,12 +112,12 @@ export default function StickyVenueHeader({
           </div>
 
           {/* Center: Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-2">
             {navSections.map((section) => (
               <button
                 key={section.id}
                 onClick={() => scrollToSection(section.id)}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all ${
+                className={`px-5 py-2.5 rounded-lg font-medium text-base transition-all ${
                   activeSection === section.id
                     ? 'bg-white text-black'
                     : 'text-gray-300 hover:text-white hover:bg-gray-800'
@@ -155,7 +155,7 @@ export default function StickyVenueHeader({
             {/* Contact Button */}
             <button
               onClick={onContactClick || (() => scrollToSection('contact'))}
-              className="bg-white hover:bg-gray-100 text-black px-4 py-2.5 md:px-6 md:py-2.5 rounded-lg font-semibold text-sm transition-all hover:shadow-lg"
+              className="bg-white hover:bg-gray-100 text-black px-6 py-3 md:px-7 md:py-3 rounded-lg font-semibold text-base transition-all hover:shadow-lg"
             >
               <span className="hidden sm:inline">Contact</span>
               <span className="sm:hidden">Contact</span>

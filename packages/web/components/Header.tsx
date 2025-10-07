@@ -39,9 +39,9 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
   return (
     <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center items-center py-3">
+        <div className="flex justify-center items-center py-5">
           {/* Category Navigation with Logo icon */}
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-3">
             {/* Logo icon - in sequence with badges */}
             <Link
               href="/"
@@ -52,17 +52,17 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
               <img
                 src="/icon-192.png"
                 alt="The Vows Social"
-                className="h-7 w-7 rounded-full"
+                className="h-9 w-9 rounded-full"
               />
             </Link>
 
-            {showLogo && <div className="w-px h-4 bg-gray-300 mr-1" />}
+            {showLogo && <div className="w-px h-5 bg-gray-300 mr-1" />}
 
             {categories.map((category) => (
               <button
                 key={category.id || 'all'}
                 onClick={() => onCategoryChange?.(category.id)}
-                className={`px-4 py-1.5 rounded-full font-medium whitespace-nowrap transition-all text-sm ${
+                className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-base ${
                   activeCategory === category.id
                     ? 'bg-black text-white'
                     : 'text-gray-600 hover:bg-gray-100'

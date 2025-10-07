@@ -69,7 +69,7 @@ export default function VenueDetailClient({ venue, images, shortAddress }: Venue
       />
 
       {/* Hero Gallery - Full Width, with top padding for fixed header */}
-      <div className="pt-16">
+      <div className="pt-20">
         <HeroGallery
         images={images}
         title={venue.title}
