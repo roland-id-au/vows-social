@@ -144,15 +144,6 @@ export default function StickyVenueHeader({
             >
               <ShareIcon className="w-5 h-5 text-gray-300 hover:text-white" />
             </button>
-
-            {/* Contact Button */}
-            <button
-              onClick={onContactClick || (() => scrollToSection('contact'))}
-              className="bg-white hover:bg-gray-100 text-black px-6 py-3 md:px-7 md:py-3 rounded-lg font-semibold text-base transition-all hover:shadow-lg"
-            >
-              <span className="hidden sm:inline">Contact</span>
-              <span className="sm:hidden">Contact</span>
-            </button>
           </div>
         </div>
       </div>
