@@ -1,40 +1,46 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
-import VenueCard from './VenueCard';
-import { Venue, SearchFilters } from '@/lib/types';
-import { getTrendingVenues, searchVenues } from '@/lib/supabase-service';
+import FeedCard from './FeedCard';
+import { Venue, SearchFilters, InstagramPost } from '@/lib/types';
+import { getTrendingListings, searchListings, createFeedItems } from '@/lib/supabase-service';
 
-interface VenueGridProps {
+interface FeedGridProps {
   filters?: SearchFilters;
 }
 
-export default function VenueGrid({ filters }: VenueGridProps) {
-  const [venues, setVenues] = useState<Venue[]>([]);
+export default function FeedGrid({ filters }: FeedGridProps) {
+  const [feedItems, setFeedItems] = useState<Array<{ item: Venue | InstagramPost; type: 'listing' | 'instagram' }>>([]);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
 
-  const loadVenues = useCallback(
+  const loadListings = useCallback(
     async (pageNum: number) => {
       if (loading || (!hasMore && pageNum > 0)) return;
 
       setLoading(true);
       try {
         const result = filters
-          ? await searchVenues(filters, pageNum)
-          : await getTrendingVenues(pageNum);
+          ? await searchListings(filters, pageNum)
+          : await getTrendingListings(pageNum);
+
+        // Create feed items with mixed Instagram content
+        const newFeedItems = createFeedItems(result.listings, {
+          includeInstagram: true,
+          instagramRatio: 0.3, // 30% Instagram content
+        });
 
         if (pageNum === 0) {
-          setVenues(result.venues);
+          setFeedItems(newFeedItems);
         } else {
-          setVenues((prev) => [...prev, ...result.venues]);
+          setFeedItems((prev) => [...prev, ...newFeedItems]);
         }
         setHasMore(result.hasMore);
       } catch (error) {
-        console.error('Error loading venues:', error);
+        console.error('Error loading listings:', error);
       } finally {
         setLoading(false);
         setInitialLoad(false);
@@ -47,7 +53,7 @@ export default function VenueGrid({ filters }: VenueGridProps) {
   useEffect(() => {
     setPage(0);
     setHasMore(true);
-    loadVenues(0);
+    loadListings(0);
   }, [filters]);
 
   // Infinite scroll
@@ -57,7 +63,7 @@ export default function VenueGrid({ filters }: VenueGridProps) {
         if (entries[0].isIntersecting && hasMore && !loading && !initialLoad) {
           const nextPage = page + 1;
           setPage(nextPage);
-          loadVenues(nextPage);
+          loadListings(nextPage);
         }
       },
       { threshold: 0.1 }
@@ -73,9 +79,9 @@ export default function VenueGrid({ filters }: VenueGridProps) {
         observer.unobserve(currentTarget);
       }
     };
-  }, [hasMore, loading, page, loadVenues, initialLoad]);
+  }, [hasMore, loading, page, loadListings, initialLoad]);
 
-  if (initialLoad && venues.length === 0) {
+  if (initialLoad && feedItems.length === 0) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[...Array(8)].map((_, i) => (
@@ -89,10 +95,10 @@ export default function VenueGrid({ filters }: VenueGridProps) {
     );
   }
 
-  if (!initialLoad && venues.length === 0) {
+  if (!initialLoad && feedItems.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">No venues found</p>
+        <p className="text-gray-500 text-lg">No listings found</p>
         <p className="text-gray-400 text-sm mt-2">Try adjusting your filters</p>
       </div>
     );
@@ -101,8 +107,12 @@ export default function VenueGrid({ filters }: VenueGridProps) {
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {venues.map((venue) => (
-          <VenueCard key={venue.id} venue={venue} />
+        {feedItems.map((feedItem, index) => (
+          <FeedCard
+            key={feedItem.type === 'listing' ? (feedItem.item as Venue).id : (feedItem.item as InstagramPost).id + '-' + index}
+            item={feedItem.item}
+            type={feedItem.type}
+          />
         ))}
       </div>
 
@@ -115,7 +125,7 @@ export default function VenueGrid({ filters }: VenueGridProps) {
         )}
       </div>
 
-      {!hasMore && venues.length > 0 && (
+      {!hasMore && feedItems.length > 0 && (
         <p className="text-center text-gray-500 py-8">
           You've reached the end of the list
         </p>

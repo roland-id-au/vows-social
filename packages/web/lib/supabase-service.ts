@@ -1,12 +1,12 @@
 import { supabase } from './supabase';
-import { Venue, SearchFilters, PriceData, LocationData } from './types';
+import { Venue, SearchFilters, PriceData, LocationData, InstagramPost } from './types';
 
-const VENUES_PER_PAGE = 12;
+const LISTINGS_PER_PAGE = 12;
 
-export async function getTrendingVenues(
+export async function getTrendingListings(
   page: number = 0,
-  limit: number = VENUES_PER_PAGE
-): Promise<{ venues: Venue[]; hasMore: boolean }> {
+  limit: number = LISTINGS_PER_PAGE
+): Promise<{ listings: Venue[]; hasMore: boolean }> {
   try {
     const from = page * limit;
     const to = from + limit - 1;
@@ -17,7 +17,11 @@ export async function getTrendingVenues(
         `
         *,
         listing_media(*),
-        listing_tags(tag_name, tags(*))
+        listing_tags(tag_name, tags(*)),
+        instagram_accounts(
+          *,
+          instagram_posts(*)
+        )
       `,
         { count: 'exact' }
       )
@@ -26,24 +30,24 @@ export async function getTrendingVenues(
 
     if (error) throw error;
 
-    // Filter out venues without images
-    const venues = (data || []).filter(venue =>
-      venue.listing_media && venue.listing_media.length > 0
+    // Filter out listings without images
+    const listings = (data || []).filter(listing =>
+      listing.listing_media && listing.listing_media.length > 0
     ) as Venue[];
-    const hasMore = count ? from + venues.length < count : false;
+    const hasMore = count ? from + listings.length < count : false;
 
-    return { venues, hasMore };
+    return { listings, hasMore };
   } catch (error) {
-    console.error('Error fetching trending venues:', error);
-    return { venues: [], hasMore: false };
+    console.error('Error fetching trending listings:', error);
+    return { listings: [], hasMore: false };
   }
 }
 
-export async function searchVenues(
+export async function searchListings(
   filters: SearchFilters,
   page: number = 0,
-  limit: number = VENUES_PER_PAGE
-): Promise<{ venues: Venue[]; hasMore: boolean }> {
+  limit: number = LISTINGS_PER_PAGE
+): Promise<{ listings: Venue[]; hasMore: boolean }> {
   try {
     const from = page * limit;
     const to = from + limit - 1;
@@ -52,7 +56,11 @@ export async function searchVenues(
       `
         *,
         listing_media(*),
-        listing_tags(tag_name, tags(*))
+        listing_tags(tag_name, tags(*)),
+        instagram_accounts(
+          *,
+          instagram_posts(*)
+        )
       `,
       { count: 'exact' }
     );
@@ -103,16 +111,16 @@ export async function searchVenues(
 
     if (error) throw error;
 
-    // Filter out venues without images
-    const venues = (data || []).filter(venue =>
-      venue.listing_media && venue.listing_media.length > 0
+    // Filter out listings without images
+    const listings = (data || []).filter(listing =>
+      listing.listing_media && listing.listing_media.length > 0
     ) as Venue[];
-    const hasMore = count ? from + venues.length < count : false;
+    const hasMore = count ? from + listings.length < count : false;
 
-    return { venues, hasMore };
+    return { listings, hasMore };
   } catch (error) {
-    console.error('Error searching venues:', error);
-    return { venues: [], hasMore: false };
+    console.error('Error searching listings:', error);
+    return { listings: [], hasMore: false };
   }
 }
 
@@ -125,7 +133,11 @@ export async function getVenueById(id: string): Promise<Venue | null> {
         *,
         listing_media(*),
         listing_tags(tag_name, tags(*)),
-        packages(*)
+        packages(*),
+        instagram_accounts(
+          *,
+          instagram_posts(*)
+        )
       `
       )
       .eq('id', id)
@@ -152,7 +164,11 @@ export async function getVenueBySlug(slug: string): Promise<Venue | null> {
         *,
         listing_media(*),
         listing_tags(tag_name, tags(*)),
-        packages(*)
+        packages(*),
+        instagram_accounts(
+          *,
+          instagram_posts(*)
+        )
       `
       )
       .eq('slug', slug)
@@ -184,10 +200,85 @@ export function formatPriceRange(priceData: PriceData): string {
   return `$${formatPrice(priceData.min_price)} - $${formatPrice(priceData.max_price)}`;
 }
 
-export function getVenueImages(venue: Venue): string[] {
-  return (venue.listing_media || [])
+export function getListingImages(listing: Venue): string[] {
+  return (listing.listing_media || [])
     .sort((a, b) => (a.order || 0) - (b.order || 0))
     .map((media) => media.url);
+}
+
+export function getListingInstagramPosts(listing: Venue): InstagramPost[] {
+  if (!listing.instagram_accounts || listing.instagram_accounts.length === 0) {
+    return [];
+  }
+
+  // Flatten all posts from all Instagram accounts
+  const allPosts = listing.instagram_accounts.flatMap(
+    (account) => account.instagram_posts || []
+  );
+
+  // Sort by posted_at descending (most recent first)
+  return allPosts.sort(
+    (a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
+  );
+}
+
+export function getAllInstagramPosts(listings: Venue[]): InstagramPost[] {
+  const allPosts = listings.flatMap((listing) => getListingInstagramPosts(listing));
+
+  // Sort by posted_at descending (most recent first)
+  return allPosts.sort(
+    (a, b) => new Date(b.posted_at).getTime() - new Date(a.posted_at).getTime()
+  );
+}
+
+// Mix Instagram posts with listings for a unified feed
+export function createFeedItems(
+  listings: Venue[],
+  options: {
+    includeInstagram?: boolean;
+    instagramRatio?: number; // Ratio of Instagram posts to listings (0-1)
+    maxItems?: number;
+  } = {}
+): Array<{ item: Venue | InstagramPost; type: 'listing' | 'instagram' }> {
+  const {
+    includeInstagram = true,
+    instagramRatio = 0.25, // 25% Instagram content by default
+    maxItems,
+  } = options;
+
+  const feedItems: Array<{ item: Venue | InstagramPost; type: 'listing' | 'instagram' }> = [];
+
+  // Add all listings
+  listings.forEach((listing) => {
+    feedItems.push({ item: listing, type: 'listing' });
+  });
+
+  // Add Instagram posts if enabled
+  if (includeInstagram) {
+    const instagramPosts = getAllInstagramPosts(listings);
+    const maxInstagramItems = Math.floor(listings.length * instagramRatio);
+    const selectedPosts = instagramPosts.slice(0, maxInstagramItems);
+
+    selectedPosts.forEach((post) => {
+      feedItems.push({ item: post, type: 'instagram' });
+    });
+  }
+
+  // Shuffle the feed items to mix listings and Instagram posts
+  const shuffled = shuffleArray(feedItems);
+
+  // Return limited items if maxItems specified
+  return maxItems ? shuffled.slice(0, maxItems) : shuffled;
+}
+
+// Fisher-Yates shuffle
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 export function getShortAddress(location: LocationData): string {

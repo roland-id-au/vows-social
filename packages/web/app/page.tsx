@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
-import VenueGrid from '@/components/VenueGrid';
+import FeedGrid from '@/components/FeedGrid';
 import { SearchFilters, VenueCategoryDisplay } from '@/lib/types';
 import { Yeseva_One } from 'next/font/google';
 
@@ -156,7 +156,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Featured</h2>
           </div>
         )}
-        <VenueGrid filters={filters} />
+        <FeedGrid filters={filters} />
       </main>
     </div>
   );

@@ -67,12 +67,45 @@ export interface PackageOption {
   inclusions: string[];
 }
 
+export interface InstagramAccount {
+  id: string;
+  instagram_id: string;
+  username: string;
+  account_type?: string;
+  full_name?: string;
+  bio?: string;
+  profile_picture_url?: string;
+  listing_id?: string;
+  followers_count?: number;
+  following_count?: number;
+  media_count?: number;
+  last_synced_at?: string;
+  sync_status?: string;
+  instagram_posts?: InstagramPost[];
+}
+
 export interface InstagramPost {
   id: string;
-  url: string;
+  instagram_media_id: string;
+  instagram_account_id: string;
+  media_type: string;
+  media_url?: string;
+  thumbnail_url?: string;
+  permalink: string;
   caption?: string;
-  likes?: number;
-  timestamp?: string;
+  posted_at: string;
+  hashtags?: string[];
+  mentions?: string[];
+  location_name?: string;
+  like_count?: number;
+  comment_count?: number;
+  engagement_rate?: number;
+  is_wedding_related?: boolean;
+  wedding_type?: string[];
+  detected_themes?: string[];
+  city?: string;
+  state?: string;
+  country?: string;
 }
 
 export interface ListingMedia {
@@ -100,7 +133,8 @@ export interface Venue {
   listing_media?: ListingMedia[];
   listing_tags?: Array<{ tag_name: string; tags: VenueTag }>;
   packages?: PackageOption[];
-  instagram_posts?: InstagramPost[];
+  instagram_accounts?: InstagramAccount[];
+  instagram_handle?: string;
   created_at?: string;
   updated_at?: string;
 }
