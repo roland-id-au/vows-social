@@ -65,13 +65,13 @@ export default function Header({ activeCategory, onCategoryChange }: HeaderProps
                 className={`px-5 py-2 rounded-full font-medium whitespace-nowrap transition-all text-base relative ${
                   activeCategory === category.id
                     ? 'bg-black text-white'
-                    : 'text-gray-600 hover:bg-gray-50 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 p-[2px]'
+                    : 'text-gray-600 hover:bg-gray-50 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 p-[1px]'
                 }`}
               >
                 {activeCategory === category.id ? (
                   category.label
                 ) : (
-                  <span className="block bg-white px-[18px] py-[6px] rounded-full">
+                  <span className="block bg-white px-[19px] py-[7px] rounded-full">
                     {category.label}
                   </span>
                 )}
