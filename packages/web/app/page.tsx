@@ -53,7 +53,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="text-center mb-8">
             <h1 className={`text-3xl md:text-4xl text-gray-900 mb-3 ${yeseva.className}`}>
-              Your Wedding, Simplified
+              The Vows Social
             </h1>
             <p className="text-base md:text-lg text-gray-600">
               Find vendors you'll love
