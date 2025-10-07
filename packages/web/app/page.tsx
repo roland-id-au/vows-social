@@ -111,69 +111,67 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Wedding Pros Grid */}
-        <VenueGrid filters={filters} />
-
-        {/* Inspiration Section */}
+        {/* Inspiration Cards - Inline with Pros Grid */}
         {!filters.location && !activeCategory && (
-          <div className="mt-16">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Get Inspired
-              </h2>
-              <button className="text-sm font-semibold text-primary-600 hover:text-primary-700">
-                See all →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-rose-100 to-pink-100 rounded-lg overflow-hidden mb-3">
-                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
-                    💒
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-900 to-gray-700 rounded-lg overflow-hidden">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                    <div className="text-6xl mb-3">💒</div>
+                    <h3 className="text-xl font-bold mb-2">Real Weddings</h3>
+                    <p className="text-sm text-gray-200 text-center opacity-90">
+                      Browse real couple stories
+                    </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
-                  Real Weddings
-                </h3>
-                <p className="text-sm text-gray-600">
-                  See how couples brought their vision to life
-                </p>
               </button>
 
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg overflow-hidden mb-3">
-                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
-                    ✨
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-600 rounded-lg overflow-hidden">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                    <div className="text-6xl mb-3">✨</div>
+                    <h3 className="text-xl font-bold mb-2">Style Guides</h3>
+                    <p className="text-sm text-gray-200 text-center opacity-90">
+                      Explore wedding styles
+                    </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
-                  Style Guides
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Explore colors, themes, and wedding styles
-                </p>
               </button>
 
               <button className="group text-left">
-                <div className="relative aspect-[4/3] bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg overflow-hidden mb-3">
-                  <div className="absolute inset-0 flex items-center justify-center text-7xl opacity-80">
-                    📈
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-700 to-gray-500 rounded-lg overflow-hidden">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                    <div className="text-6xl mb-3">📈</div>
+                    <h3 className="text-xl font-bold mb-2">Trending</h3>
+                    <p className="text-sm text-gray-200 text-center opacity-90">
+                      What's hot this season
+                    </p>
                   </div>
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-primary-600 transition-colors">
-                  Trending Now
-                </h3>
-                <p className="text-sm text-gray-600">
-                  What's hot in weddings this season
-                </p>
+              </button>
+
+              <button className="group text-left">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-600 to-gray-400 rounded-lg overflow-hidden">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
+                    <div className="text-6xl mb-3">🎨</div>
+                    <h3 className="text-xl font-bold mb-2">Ideas</h3>
+                    <p className="text-sm text-gray-200 text-center opacity-90">
+                      Colors, themes & more
+                    </p>
+                  </div>
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors"></div>
+                </div>
               </button>
             </div>
           </div>
         )}
+
+        {/* Wedding Pros Grid */}
+        <VenueGrid filters={filters} />
       </main>
     </div>
   );
