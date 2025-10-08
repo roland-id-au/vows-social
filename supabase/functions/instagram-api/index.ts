@@ -160,12 +160,25 @@ async function getInstagramClient() {
     try {
       console.log(`Attempting Instagram login as @${username}...`)
 
+      // Clear old challenge records for fresh start
+      await supabase
+        .from('instagram_challenge_state')
+        .delete()
+        .eq('username', username)
+
+      await supabase
+        .from('instagram_challenge_emails')
+        .delete()
+        .eq('to_email', 'sugar@vows.social')
+
+      console.log('Cleared old challenge records')
+
       await discord.log('🔄 Instagram Login Attempt', {
         color: 0xffaa00,
         metadata: {
           'Method': 'Direct',
           'Username': `@${username}`,
-          'Status': 'Attempting login...'
+          'Status': 'Attempting fresh login...'
         }
       })
 
@@ -615,6 +628,13 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  )
+
+  let lockAcquired = false
+
   try {
     const body = await req.json()
     const action = body.action
@@ -623,6 +643,26 @@ serve(async (req) => {
     const limit = body.limit || 12
 
     console.log(`Instagram API action: ${action}`, username ? `for @${username}` : '')
+
+    // Acquire lock to prevent concurrent Instagram API usage
+    const requestId = crypto.randomUUID()
+    const { data: acquired } = await supabase.rpc('acquire_instagram_lock', {
+      lock_owner: requestId
+    })
+
+    if (!acquired) {
+      console.log('Instagram API locked by another request, waiting...')
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Instagram API is currently in use by another request. Please try again in a moment.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 429 }
+      )
+    }
+
+    lockAcquired = true
+    console.log('Instagram API lock acquired:', requestId)
 
     // Monitor user posts
     if (action === 'monitor_user') {
@@ -779,5 +819,15 @@ serve(async (req) => {
         status: 500
       }
     )
+  } finally {
+    // Always release lock when done (even if error occurred)
+    if (lockAcquired) {
+      try {
+        await supabase.rpc('release_instagram_lock')
+        console.log('Instagram API lock released')
+      } catch (err) {
+        console.error('Failed to release lock:', err)
+      }
+    }
   }
 })

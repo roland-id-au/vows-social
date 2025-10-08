@@ -87,15 +87,16 @@ export default function StickyVenueHeader({
     <header
       className="fixed top-0 left-0 right-0 z-50 bg-black backdrop-blur-md border-b border-gray-800 shadow-lg"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center h-20 gap-4">
-          {/* Left: Logo + Venue Name */}
-          <div className="flex items-center gap-4 min-w-0 justify-start">
-            <Link href="/" className="flex-shrink-0">
-              <span className={`text-2xl md:text-3xl font-bold text-white ${yeseva.className}`}>
-                The Vows Social
-              </span>
-            </Link>
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1920px] mx-auto">
+          <div className="grid grid-cols-[minmax(200px,1fr)_auto_minmax(200px,1fr)] items-center h-20 gap-8">
+            {/* Left: Logo + Venue Name */}
+            <div className="flex items-center gap-4 min-w-0 justify-start">
+              <Link href="/" className="flex-shrink-0">
+                <span className={`text-base font-bold text-white ${yeseva.className}`}>
+                  The Vows Social
+                </span>
+              </Link>
 
             <div className="hidden lg:block w-px h-10 bg-gray-700" />
 
@@ -144,6 +145,7 @@ export default function StickyVenueHeader({
             >
               <ShareIcon className="w-5 h-5 text-gray-300 hover:text-white" />
             </button>
+          </div>
           </div>
         </div>
       </div>
